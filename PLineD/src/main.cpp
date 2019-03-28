@@ -210,7 +210,6 @@ int main(int argc, char* argv[]){
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     ShowImage("TestImage",BLACK);
     ShowImage("PLineD",BLACK,50,600);
-    //ShowImage("PLineD2",BLACK,50,650);
     
     while(ros::ok()){
         while(!gotImage && ros::ok()){
@@ -230,8 +229,7 @@ int main(int argc, char* argv[]){
         for(inspec_msg::line2d line: lineEstimates){
             drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
         }
-        //PLineD::printContours(out, lines);
-        //cout << "Parrallel Lines: " << parallelLines.size() << endl;
+
         cv::imshow("PLineD",out);
         cv::waitKey(1);
     }
