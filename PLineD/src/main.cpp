@@ -82,14 +82,6 @@ mathLine leastSquareRegression(const std::vector<cv::Point> &aLine){
     mathLine ret;
     ret.a = (N*xy_sum-x_sum*y_sum)/(N*xx_sum-(x_sum*x_sum));
     ret.b = (y_sum-ret.a*x_sum)/N;
-
-
-    /*double b = (-ret.b+dst.rows/2)-(-line.a)*(dst.cols/2);
-    double a = -line.a;
-    cout << "############### Line ################" << endl;
-    cout << "LS Real AB:" << ret.a << ", " << ret.b << endl;*/
-    
-
     return ret;
 }
 lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
