@@ -164,6 +164,26 @@ void estimate_handler(inspec_msg::line2d_array msg){
     cout << "Recived Estimated Lines: " << msg.header.seq << endl;
 }
 
+void PublishLinesToRos(lineSeg lines){
+    inspec_msg::line2d_array msg;
+    inspec_msg::head h;
+    h.seq = img_num;
+    h.stamp = ros::Time::now();
+    msg.header = h;
+
+    cout << "Header seq:" << msg.header.seq << endl; 
+    for(int i = 0; i < lines.size(); i++){
+        mathLine mline = leastSquareRegression(lines[i]);
+        inspec_msg::line2d msg_line;
+        msg_line.dx = 1;
+        msg_line.dy = mline.a;
+        msg_line.x0 = 0;
+        msg_line.y0 = mline.b;
+        msg.lines.push_back(msg_line);
+    }
+    line_pub.publish(msg);
+}
+
 //################ MAIN ##################################
 int main(int argc, char* argv[]){
     // ############## Start Ros ################
@@ -182,25 +202,9 @@ int main(int argc, char* argv[]){
             ros::spinOnce();
         }
         lineSeg lines = PLineD_full(img,true);
+        PublishLinesToRos(lines);
 
-        //########## ROS PUBLISHING ##########
-        inspec_msg::line2d_array msg;
-        inspec_msg::head h;
-        h.seq = img_num;
-        h.stamp = ros::Time::now();
-        msg.header = h;
-
-        cout << "Header seq:" << msg.header.seq << endl; 
-        for(int i = 0; i < lines.size(); i++){
-            mathLine mline = leastSquareRegression(lines[i]);
-            inspec_msg::line2d msg_line;
-            msg_line.dx = 1;
-            msg_line.dy = mline.a;
-            msg_line.x0 = 0;
-            msg_line.y0 = mline.b;
-            msg.lines.push_back(msg_line);
-        }
-        line_pub.publish(msg);
+        
         gotImage = false;
     }
 
