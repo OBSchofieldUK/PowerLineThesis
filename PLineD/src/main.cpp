@@ -130,7 +130,10 @@ lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
     //
     //Show Results
     if(DEBUG){
-
+        cv::Mat out(src_gray.rows, src_gray.cols, CV_8UC3, cv::Scalar(0,0,0));
+        PLineD::printContours(out, parallelLines);
+        cv::imshow("PLineD",out);
+        cv::waitKey(1);
     }
 
     return parallelLines;
@@ -198,26 +201,29 @@ int main(int argc, char* argv[]){
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     ShowImage("TestImage",BLACK);
     ShowImage("PLineD",BLACK,50,650);
+    //ShowImage("PLineD2",BLACK,50,650);
     
     while(ros::ok()){
         while(!gotImage && ros::ok()){
             ros::spinOnce();
         }
-        lineSeg lines = PLineD_full(img,true);
+        lineSeg lines = PLineD_full(img,false);
         PublishLinesToRos(lines);      
         gotImage = false;
         
-        cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
-        for(int i = 0; i < lines.size(); i++){
+        cv::Mat out(1080, 1920, CV_8UC3, cv::Scalar(0,0,0));
+        PLineD::printContours(out, lines);
+        /*for(int i = 0; i < lines.size(); i++){
             mathLine Line = leastSquareRegression(lines[i]);
             drawMathLine(out,Line);
-        }
+        }*/
+        
         /*for(inspec_msg::line2d line: lineEstimates){
             drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
         }*/
-        PLineD::printContours(out, lines);
+        //PLineD::printContours(out, lines);
         //cout << "Parrallel Lines: " << parallelLines.size() << endl;
-        cv::imshow("PLineD",out);
+        cv::imshow("PLineD2",out);
         cv::waitKey(1);
     }
 
