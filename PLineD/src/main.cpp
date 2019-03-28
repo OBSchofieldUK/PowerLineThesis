@@ -55,10 +55,12 @@ void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
 void drawMathLine(cv::Mat &dst, mathLine line, cv::Scalar color = cv::Scalar(255,255,255)){
     vector<cv::Mat> channels;
     cv::split(dst,channels);
-    for(int i = 0; i< dst.cols; i++){
-        int y = line.a*i+line.b;
+    for(int x = 0; x< dst.cols; x++){
+        double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
+        double a = -line.a;
+        int y = a*x+b;
         if(y > 0 && y < dst.rows){
-            dst.at<cv::Vec3b>(cv::Point(i,y)) = {uchar(color[0]),uchar(color[1]),uchar(color[2])};
+            dst.at<cv::Vec3b>(cv::Point(x,y)) = {uchar(color[0]),uchar(color[1]),uchar(color[2])};
         }
     }
 }
@@ -80,6 +82,14 @@ mathLine leastSquareRegression(const std::vector<cv::Point> &aLine){
     mathLine ret;
     ret.a = (N*xy_sum-x_sum*y_sum)/(N*xx_sum-(x_sum*x_sum));
     ret.b = (y_sum-ret.a*x_sum)/N;
+
+
+    /*double b = (-ret.b+dst.rows/2)-(-line.a)*(dst.cols/2);
+    double a = -line.a;
+    cout << "############### Line ################" << endl;
+    cout << "LS Real AB:" << ret.a << ", " << ret.b << endl;*/
+    
+
     return ret;
 }
 lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
@@ -89,7 +99,6 @@ lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
     lineSeg contours;
 
     cvtColor(src,src_gray,CV_BGR2GRAY);                     //Make Image gray
-    cv::resize(src_gray,src_gray,cv::Size(1920,1080));      //Resize To 1920x1080
     PLineD::contoursCanny(src_gray,contours                 //Find Contours
                     ,IMAGE_CONTOURS_FILTER_KERNAL_SIZE      //Gausian & sobal filter kernal size
                     ,IMAGE_CONTOURS_TRESHOLD_LOW            //Canny lower treshold limit
@@ -158,7 +167,7 @@ void image_handler(sensor_msgs::Image msg){
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    img = cv_ptr->image;
+    cv::resize(cv_ptr->image,img,cv::Size(1920,1080));      //Resize To 1920x1080
     gotImage = true;
     cv::imshow("TestImage",img);
     cv::waitKey(1);
@@ -200,7 +209,7 @@ int main(int argc, char* argv[]){
     // ############## Setup Output windows ##############
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     ShowImage("TestImage",BLACK);
-    ShowImage("PLineD",BLACK,50,650);
+    ShowImage("PLineD",BLACK,50,600);
     //ShowImage("PLineD2",BLACK,50,650);
     
     while(ros::ok()){
@@ -211,19 +220,19 @@ int main(int argc, char* argv[]){
         PublishLinesToRos(lines);      
         gotImage = false;
         
-        cv::Mat out(1080, 1920, CV_8UC3, cv::Scalar(0,0,0));
+        cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
         PLineD::printContours(out, lines);
-        /*for(int i = 0; i < lines.size(); i++){
+        for(int i = 0; i < lines.size(); i++){
             mathLine Line = leastSquareRegression(lines[i]);
             drawMathLine(out,Line);
-        }*/
+        }
         
-        /*for(inspec_msg::line2d line: lineEstimates){
+        for(inspec_msg::line2d line: lineEstimates){
             drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
-        }*/
+        }
         //PLineD::printContours(out, lines);
         //cout << "Parrallel Lines: " << parallelLines.size() << endl;
-        cv::imshow("PLineD2",out);
+        cv::imshow("PLineD",out);
         cv::waitKey(1);
     }
 

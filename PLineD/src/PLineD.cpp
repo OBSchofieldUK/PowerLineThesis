@@ -34,9 +34,9 @@ cv::Mat calcVecCovar(const std::vector<cv::Point> &inRow){
     return coVarMatx;
 }
 double calcDiffAngle(cv::Point V1, cv::Point V2){
-double A= acos(V1.dot(V2)  /  (sqrt(   V1.dot(V1)   )*sqrt(  V2.dot(V2)  )));
-if(A > M_PI/2) A = M_PI-A;
-return A;
+    double A= acos(V1.dot(V2)  /  (sqrt(   V1.dot(V1)   )*sqrt(  V2.dot(V2)  )));
+    if(A > M_PI/2) A = M_PI-A;
+    return A;
 }
 }
 
