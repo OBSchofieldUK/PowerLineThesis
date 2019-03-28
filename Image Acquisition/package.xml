@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package>
+  <name>image_aquisation</name>
+  <version>1.0.0</version>
+  <description>This package will give tools for aquiring Image data for conected cameras</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <!-- Example:  -->
+  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
+  <maintainer email="kalor14@student.sdu.dk">Kasper Hoej Lorenzen</maintainer>
+
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>inspec_msg</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>cv_bridge </build_depend>
+  <build_depend>opencv </build_depend>
+
+  <run_depend>message_runtime</run_depend>
+  <run_depend>inspec_msg</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>cv_bridge </run_depend>
+  <run_depend>opencv </run_depend>
+
+  <export>
+
+  </export>
+</package>
