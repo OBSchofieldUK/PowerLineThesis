@@ -42,6 +42,7 @@ ros::Subscriber image_sub;
 ros::Publisher line_pub;
 
 cv::Mat img;
+vector<inspec_msg::line2d> lineEstimates;
 size_t img_num;
 bool gotImage = false;
 // ############## DEBUG ALGORITHMS ########################
@@ -63,12 +64,12 @@ void drawMathLine(cv::Mat &dst, mathLine line, cv::Scalar color = cv::Scalar(255
 }
 
 // ############### OTHER #################################
-mathLine leastSquareRegression(std::vector<cv::Point> aLine){
+mathLine leastSquareRegression(const std::vector<cv::Point> &aLine){
     int N = aLine.size();
     double y_sum, x_sum, xy_sum, xx_sum;
     for(int i = 0; i < N; i++){
-        const double &x = aLine[i].x;
-        const double &y = aLine[i].y;
+        const double x = aLine[i].x-img.cols/2;
+        const double y = -(aLine[i].y-img.rows/2);
 
         y_sum += y;
         x_sum += x;
@@ -129,21 +130,20 @@ lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
     //
     //Show Results
     if(DEBUG){
-        cv::Mat out(src_gray.rows, src_gray.cols, CV_8UC3, cv::Scalar(0,0,0));
-        for(int i = 0; i < parallelLines.size(); i++){
-            mathLine Line = leastSquareRegression(parallelLines[i]);
-            drawMathLine(out,Line);
-        }
-        PLineD::printContours(out, parallelLines);
-        //cout << "Parrallel Lines: " << parallelLines.size() << endl;
-        cv::imshow("PLineD",out);
-        cv::waitKey(1);
+
     }
 
     return parallelLines;
 }
 
 // ############### ROS FUNCTIONS #########################
+mathLine ros2mathLine(inspec_msg::line2d line){
+    mathLine ret;
+    double t = line.x0/line.dx;
+    ret.b =  line.y0-line.dy*t;
+    ret.a = line.dy/line.dx;
+    return ret;
+}
 void image_handler(sensor_msgs::Image msg){
     //cv::Mat img = cv::Mat(msg.data);
     cout << "Image Num: " << msg.header.seq << endl;
@@ -162,16 +162,18 @@ void image_handler(sensor_msgs::Image msg){
 }
 void estimate_handler(inspec_msg::line2d_array msg){
     cout << "Recived Estimated Lines: " << msg.header.seq << endl;
-}
+    lineEstimates = msg.lines;
 
+    if(msg.header.seq != img_num){
+        cerr << "Estimate out of sync" << endl;
+    }
+}
 void PublishLinesToRos(lineSeg lines){
     inspec_msg::line2d_array msg;
     inspec_msg::head h;
     h.seq = img_num;
     h.stamp = ros::Time::now();
     msg.header = h;
-
-    cout << "Header seq:" << msg.header.seq << endl; 
     for(int i = 0; i < lines.size(); i++){
         mathLine mline = leastSquareRegression(lines[i]);
         inspec_msg::line2d msg_line;
@@ -202,10 +204,21 @@ int main(int argc, char* argv[]){
             ros::spinOnce();
         }
         lineSeg lines = PLineD_full(img,true);
-        PublishLinesToRos(lines);
-
-        
+        PublishLinesToRos(lines);      
         gotImage = false;
+        
+        cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
+        for(int i = 0; i < lines.size(); i++){
+            mathLine Line = leastSquareRegression(lines[i]);
+            drawMathLine(out,Line);
+        }
+        /*for(inspec_msg::line2d line: lineEstimates){
+            drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
+        }*/
+        PLineD::printContours(out, lines);
+        //cout << "Parrallel Lines: " << parallelLines.size() << endl;
+        cv::imshow("PLineD",out);
+        cv::waitKey(1);
     }
 
     return 0;

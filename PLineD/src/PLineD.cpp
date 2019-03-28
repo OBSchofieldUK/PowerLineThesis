@@ -76,11 +76,16 @@ void contoursCanny(const cv::Mat &src,lineSeg &contours,uint8_t kernel_size,uint
     Canny(img, img, low_treshold, high_treshold, kernel_size);
     findContours( img, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE, cv::Point(0, 0) );
 }
-void printContours(cv::Mat &dst,lineSeg &contours){
+void printContours(cv::Mat &dst, const lineSeg &contours){
     for( size_t i = 0; i< contours.size(); i++ ){
         cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
         for( size_t z = 0; z < contours[i].size(); z++ ){
-            dst.at<cv::Vec3b>(contours[i][z]) = {uchar(color[0]), uchar(color[1]), uchar(color[2])};
+            cv::Point p = contours[i][z];
+            if(p.x >= 0 && p.x < dst.cols && p.y>=0 && p.y <dst.rows){
+                dst.at<cv::Vec3b>(contours[i][z]) = {uchar(color[0]), uchar(color[1]), uchar(color[2])};
+            }else{
+                std::cerr << "Index out of bounds: P(" << p.x << ", " << p.y << ") - Bounds(" << dst.cols << ", " << dst.rows << ")" << std::endl;
+            }
         }
     }
 }
