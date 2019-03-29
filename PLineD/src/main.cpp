@@ -1,9 +1,11 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include <vector>
-#include <deque>
 #include <string>
 #include <math.h>
+
+#include <vector>
+#include <deque>
+#include <queue>
 
 #include <PLineD.hpp>
 
@@ -37,8 +39,31 @@ struct mathLine{
     double b;
 };
 
+class candidate{
+
+public:
+    candidate():angle(0),offset(0),index(0),error(0){}
+    candidate(double angle,double offset,double index):angle(angle),offset(offset),index(index){
+        this->errorCal();
+    }
+    void errorCal(){
+        this->error = abs((this->offset/15)*M_PI/180)+ this->angle;
+    }
+    bool operator< (const candidate &rhs) const{
+        return this->error > rhs.error;
+    }
+    double angle;
+    double offset;
+    double error;
+    uint index;
+};
+
 ostream& operator<<(ostream& os, const mathLine& dt){
     os << "y = " << dt.a << "\t * x + " << dt.b ;
+    return os;
+}
+ostream& operator<<(ostream& os, const candidate& dt){
+    os << "Canditate[" << dt.index << "] Angle(" << dt.angle*180/M_PI << ") Offset(" << dt.offset << ")";
     return os;
 }
 
@@ -152,7 +177,7 @@ double rad2deg(const double &angle){
 double deg2rad(const double &angle){
     return angle*M_PI/180;
 }
-double angle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
+double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
     double length1 = sqrt(pow(l1.dx,2)+pow(l1.dy,2));
     double length2 = sqrt(pow(l2.dx,2)+pow(l2.dy,2));
     double dot = l1.dx*l2.dx+l1.dy*l2.dy;
@@ -167,6 +192,14 @@ mathLine ros2mathLine(inspec_msg::line2d line){
     ret.a = line.dy/line.dx;
     
     return ret;
+}
+inspec_msg::line2d mathLine2ros(mathLine mline){
+    inspec_msg::line2d msg_line;
+    msg_line.dx = 1;
+    msg_line.dy = mline.a;
+    msg_line.x0 = 0;
+    msg_line.y0 = mline.b;
+    return msg_line;
 }
 void image_handler(sensor_msgs::Image msg){
     //cv::Mat img = cv::Mat(msg.data);
@@ -202,13 +235,7 @@ void PublishLinesToRos(vector<mathLine> lines){
     h.stamp = ros::Time::now();
     msg.header = h;
     for(int i = 0; i < lines.size(); i++){
-        mathLine mline = lines[i];
-        inspec_msg::line2d msg_line;
-        msg_line.dx = 1;
-        msg_line.dy = mline.a;
-        msg_line.x0 = 0;
-        msg_line.y0 = mline.b;
-        //cout << "Sending Line: " << ros2mathLine(msg_line) << endl; // Code Doesn't work without this line duno why
+        inspec_msg::line2d msg_line = mathLine2ros(lines[i]);
         msg.lines.push_back(msg_line);
     }
     line_pub.publish(msg);
@@ -220,7 +247,7 @@ void syncEstimateLines(){
         return;
     }
     if(lineEstimates.front().header.seq > img_num){
-        cerr << "Huston We have a Problem" <<endl;
+        cerr << "Houston, We have a Problem" <<endl;
     }else{
         while(lineEstimates.front().header.seq < img_num){
             if(lineEstimates.empty()){
@@ -263,13 +290,43 @@ int main(int argc, char* argv[]){
        
 
        // ############### Ready Data for Matching #######################
-        for(int i = 0; i < lines.size(); i++){
+        for(uint i = 0; i < lines.size(); i++){
             currentLines.push_back(leastSquareRegression(lines[i]));
         }
         syncEstimateLines();
-
         // ################ Line Matching ########################
+        cout << "Line Mathcher" << endl;
+        
+        if(!lineEstimates.empty()){
+            vector<priority_queue<candidate>> candList(lineEstimates.front().lines.size());
+            vector<int> claims(currentLines.size());
+            for(uint i = 0; i < lineEstimates.front().lines.size(); i++){
+                cout << "#############" << endl<< "Line: " << lineEstimates.front().lines[i].id << endl;
+                for(uint j = 0; j < currentLines.size(); j++ ){
+                    candidate c(
+                        vecAngle(lineEstimates.front().lines[i],mathLine2ros(currentLines[j])),
+                        ros2mathLine(lineEstimates.front().lines[i]).b - currentLines[j].b,
+                        j
+                    );
+                    candList[i].push(c);
+                }
+                /*while(!candList[i].empty()){
+                    cout << candList[i].top() << endl;
+                    candList[i].pop();
+                }*/
+                cout << "Top pic " << candList[i].top().index << endl;
+                claims[candList[i].top().index]++;
+            }
+            vector<inspec_msg::line2d> matched_lines(currentLines.size());
+            for(int i = 0; i < candList.size(); i++){
+                if(claims[candList[i].top().index] == 1){
 
+                }else{
+                    
+                }
+            }
+        }
+        
 
 
         // ################ Finalize #############################
