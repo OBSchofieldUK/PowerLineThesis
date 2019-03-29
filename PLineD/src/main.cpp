@@ -253,21 +253,24 @@ int main(int argc, char* argv[]){
         }
         cout << endl << endl << "###########################################" << endl;
         cout << "Start Work Flow Image: " << img_num << endl;
+
         lineSeg lines = PLineD_full(img,false);
         cout << "PlineD Done found " << lines.size() << " Lines" << endl;
+       
         for(int i = 0; i < lines.size(); i++){
             currentLines.push_back(leastSquareRegression(lines[i]));
         }
         syncEstimateLines();
 
+        // ################ Line Matching ########################
+
+
+
+        // ################ Finalize #############################
         PublishLinesToRos(currentLines);
         cout << "Published Lines To Ros" << endl << endl;
         
-
-
-        /*for(inspec_msg::line2d line: lineEstimates.front().lines){
-
-        }*/
+        //################# DEBUG ################################
 
 
         cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
