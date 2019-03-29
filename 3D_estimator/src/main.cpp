@@ -365,7 +365,7 @@ rw::math::Quaternion<double> diffAngle(const rw::math::Quaternion<double> &end, 
 
 void line_handler(inspec_msg::line2d_array msg){   
     std::cout << "Image Data Recived: " << long(msg.header.seq) << endl;
-    if(msg.header.seq > image_seq){
+    if(msg.header.seq > image_seq && msg.header.seq == position_seq){
         image_seq = msg.header.seq;
         // Update Estimate
         for(uint i = 0; i < msg.lines.size(); i++){
@@ -378,6 +378,7 @@ void line_handler(inspec_msg::line2d_array msg){
             }  
         }
     }
+    cout << "Image Data Done" << endl;
 }
 void position_handler(inspec_msg::position msg){
     std::cout << "Position Recived: " << msg.header.seq << endl;
@@ -402,7 +403,7 @@ void position_handler(inspec_msg::position msg){
             if(position_seq-x.second.lastObserved > MAX_UNOBSERVED_STATES_BEFORE_DELETION){
                 toRemove.push_back(x.second);
             }else{
-                //updateLineEstimate(x.second,F);
+                updateLineEstimate(x.second,F);
                 return_msg.lines.push_back(line2ros2D(x.second));
             }      
         }
@@ -412,6 +413,7 @@ void position_handler(inspec_msg::position msg){
         line2Dest_pub.publish(return_msg);
 
     }
+    cout << "Done With Position Data" << endl;
 }
 
 int main(int argc, char* argv[]){
