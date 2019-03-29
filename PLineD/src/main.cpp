@@ -247,16 +247,22 @@ int main(int argc, char* argv[]){
     ShowImage("PLineD",BLACK,50,600);
     
     while(ros::ok()){
+
+        //############## Reset and Wait for Data #####################
         currentLines.clear();
         while(!gotImage && ros::ok()){
             ros::spinOnce();
         }
+
+        // ############# Pline D #####################################
         cout << endl << endl << "###########################################" << endl;
         cout << "Start Work Flow Image: " << img_num << endl;
 
         lineSeg lines = PLineD_full(img,false);
         cout << "PlineD Done found " << lines.size() << " Lines" << endl;
        
+
+       // ############### Ready Data for Matching #######################
         for(int i = 0; i < lines.size(); i++){
             currentLines.push_back(leastSquareRegression(lines[i]));
         }
@@ -269,7 +275,7 @@ int main(int argc, char* argv[]){
         // ################ Finalize #############################
         PublishLinesToRos(currentLines);
         cout << "Published Lines To Ros" << endl << endl;
-        
+        gotImage = false;
         //################# DEBUG ################################
 
 
@@ -289,7 +295,7 @@ int main(int argc, char* argv[]){
 
         cv::imshow("PLineD",out);
         cv::waitKey(1);
-        gotImage = false;
+        
     }
 
     return 0;
