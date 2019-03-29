@@ -1,8 +1,10 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <string>
 #include <math.h>
+
 #include <PLineD.hpp>
 
 #include <cv_bridge/cv_bridge.h>
@@ -35,6 +37,10 @@ struct mathLine{
     double b;
 };
 
+ostream& operator<<(ostream& os, const mathLine& dt){
+    os << "y = " << dt.a << "\t * x + " << dt.b ;
+    return os;
+}
 
 ros::NodeHandle* nh;
 ros::Subscriber estimate_sub;
@@ -42,9 +48,13 @@ ros::Subscriber image_sub;
 ros::Publisher line_pub;
 
 cv::Mat img;
-vector<inspec_msg::line2d> lineEstimates;
+deque<inspec_msg::line2d_array> lineEstimates;
 size_t img_num;
+size_t estimate_num;
 bool gotImage = false;
+
+map<long,mathLine> sentLines;
+
 // ############## DEBUG ALGORITHMS ########################
 void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::namedWindow(name,cv::WINDOW_NORMAL);
@@ -53,8 +63,6 @@ void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::imshow(name, img);
 }
 void drawMathLine(cv::Mat &dst, mathLine line, cv::Scalar color = cv::Scalar(255,255,255)){
-    vector<cv::Mat> channels;
-    cv::split(dst,channels);
     for(int x = 0; x< dst.cols; x++){
         double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
         double a = -line.a;
@@ -146,6 +154,7 @@ mathLine ros2mathLine(inspec_msg::line2d line){
     double t = line.x0/line.dx;
     ret.b =  line.y0-line.dy*t;
     ret.a = line.dy/line.dx;
+    
     return ret;
 }
 void image_handler(sensor_msgs::Image msg){
@@ -165,9 +174,12 @@ void image_handler(sensor_msgs::Image msg){
     cv::waitKey(1);
 }
 void estimate_handler(inspec_msg::line2d_array msg){
-    cout << "Recived Estimated Lines: " << msg.header.seq << endl;
-    lineEstimates = msg.lines;
-
+    cout << "Recived Estimated Lines: " << msg.header.seq << " Size: "<< msg.lines.size() << endl;
+    lineEstimates.push_back(msg);
+    for(auto line: msg.lines){
+        mathLine m = ros2mathLine(line);
+    }
+    
     if(msg.header.seq != img_num){
         cerr << "Estimate out of sync" << endl;
     }
@@ -185,6 +197,7 @@ void PublishLinesToRos(lineSeg lines){
         msg_line.dy = mline.a;
         msg_line.x0 = 0;
         msg_line.y0 = mline.b;
+        cout << "Sending Line: " << ros2mathLine(msg_line) << endl; // Code Doesn't work without this line duno why
         msg.lines.push_back(msg_line);
     }
     line_pub.publish(msg);
@@ -207,23 +220,42 @@ int main(int argc, char* argv[]){
         while(!gotImage && ros::ok()){
             ros::spinOnce();
         }
+        cout << endl << endl << "###########################################" << endl;
+        cout << "Start Work Flow Image: " << img_num << endl;
         lineSeg lines = PLineD_full(img,false);
-        PublishLinesToRos(lines);      
-        gotImage = false;
-        
+        cout << "PlineD Done found " << lines.size() << " Lines" << endl;
+        PublishLinesToRos(lines);
+        cout << "Published Lines To Ros" << endl << endl;
+
+        ros::spinOnce();
+        if(lineEstimates.front().header.seq > img_num){
+            cerr << "Huston We have a Problem" <<endl;
+        }else{
+            while(lineEstimates.front().header.seq < img_num){
+                if(lineEstimates.empty()){
+                    cout << "No Line Estimates" << endl;
+                    break;
+                }
+                lineEstimates.pop_front();
+            }
+        }
+        cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
+
         cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
         PLineD::printContours(out, lines);
         for(int i = 0; i < lines.size(); i++){
             mathLine Line = leastSquareRegression(lines[i]);
             drawMathLine(out,Line);
         }
-        
-        for(inspec_msg::line2d line: lineEstimates){
-            drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
+        if(!lineEstimates.empty()){
+            for(inspec_msg::line2d line: lineEstimates.front().lines){
+                drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
+            }
         }
 
         cv::imshow("PLineD",out);
         cv::waitKey(1);
+        gotImage = false;
     }
 
     return 0;

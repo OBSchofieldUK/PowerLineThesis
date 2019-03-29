@@ -19,7 +19,7 @@
 #include <inspec_msg/line3d_array.h>
 #include <inspec_msg/position.h>
 
-#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 4
+#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1
 #define X0 0
 #define Y0 1
 #define Z0 2
@@ -88,6 +88,8 @@ map<long,lineEstimate> ActiveLines;
 size_t image_seq;
 size_t position_seq;
 long max_line_id;
+rw::math::Vector3D<double> last_pos;
+rw::math::Quaternion<double> last_ori;
 deque<inspec_msg::position> positionQueue(10);
 
 // #### System Constants ####
@@ -287,12 +289,18 @@ inspec_msg::line3d line2ros(const Vector7d &line){
     ret.dir = {line(4), line(5), line(6)};
     return ret;
 }
+inspec_msg::line2d line2ros2D(lineEstimate line){
+    inspec_msg::line2d ret = line2ros(line.line2d);
+    ret.id = line.id;
+    return ret;
+}
 Vector4d ros2line(const inspec_msg::line2d line){
-    return Vector4d(line.x0,line.y0,line.dx,line.dy);
+    Vector4d v(line.x0,line.y0,line.dx,line.dy);
+    NormalizeLine(v);
+    return v;
 }
 
 void addNewLine(inspec_msg::line2d line2d){
-    //Xx_hat = [pos(1);vel(1)];
     lineEstimate newLine;
 
     if(line2d.id != 0){
@@ -305,9 +313,7 @@ void addNewLine(inspec_msg::line2d line2d){
     newLine.consecutiveObservations++;
     newLine.P = P_initial_diag;
     newLine.line2d = ros2line(line2d);
-    NormalizeLine(newLine.line2d);
     newLine.X_hat = line2dTo3d(newLine.line2d,currentCam); //TODO correct this for better start guess
-    //cout << "NewLine 2d" << endl << newLine.line2d << endl << "#########" << endl;
     ActiveLines[newLine.id] = newLine;
 }
 void removeLine(lineEstimate line){
@@ -347,6 +353,14 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     NormalizeLine(theLine.X_hat);
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
 }
+
+rw::math::Quaternion<double> diffAngle(const rw::math::Quaternion<double> &end, const rw::math::Quaternion<double> &start){
+    rw::math::Rotation3D<double> R;
+    R = start.toRotation3D();
+    R.inverse();
+    R = R *end.toRotation3D();
+    return rw::math::Quaternion<double>(R);
+}
 // ########################## ROS handlers ####################################
 
 void line_handler(inspec_msg::line2d_array msg){   
@@ -358,6 +372,7 @@ void line_handler(inspec_msg::line2d_array msg){
             try{
                 lineEstimate &line = ActiveLines.at(size_t(msg.lines[i].id));
                 correctLineEstimate(line,msg.lines[i]);
+                cout << "Correcting Lines" << endl;
             }catch(const std::out_of_range& oor) {
                 addNewLine(msg.lines[i]);
             }  
@@ -370,18 +385,25 @@ void position_handler(inspec_msg::position msg){
         position_seq = msg.header.seq;
         positionQueue.push_front(msg);
         positionQueue.pop_back();
-        Matrix7 F = F_matrix(rw::math::Vector3D<double>(msg.position[0],msg.position[1],msg.position[2]),
-                             rw::math::Quaternion<double>(msg.Orientation_quat[0],msg.Orientation_quat[1],msg.Orientation_quat[2],msg.Orientation_quat[3])
-                            );
+        rw::math::Vector3D<double> new_pos(msg.position[0],msg.position[1],msg.position[2]);
+        rw::math::Quaternion<double> new_ori(msg.Orientation_quat[0],msg.Orientation_quat[1],msg.Orientation_quat[2],msg.Orientation_quat[3]);
+
+        rw::math::Quaternion<double> dA = diffAngle(last_ori,new_ori);
+
+        Matrix7 F = F_matrix(new_pos-last_pos,
+                             dA);
+        
+        last_pos = new_pos;
+        last_ori = new_ori;
+
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;
         for (pair<const long int,lineEstimate> &x : ActiveLines){
             if(position_seq-x.second.lastObserved > MAX_UNOBSERVED_STATES_BEFORE_DELETION){
                 toRemove.push_back(x.second);
             }else{
-                updateLineEstimate(x.second,F);
-                return_msg.lines.push_back(line2ros(x.second.line2d));
-                //cout << "Update" << endl;
+                //updateLineEstimate(x.second,F);
+                return_msg.lines.push_back(line2ros2D(x.second));
             }      
         }
         for(uint i = 0; i < toRemove.size(); i++) removeLine(toRemove[i]);
