@@ -41,7 +41,7 @@ struct mathLine{
 
 class candidate{
 
-public:
+ public:
     candidate():angle(0),offset(0),index(0),error(0){}
     candidate(double angle,double offset,double index):angle(angle),offset(offset),index(index){
         this->errorCal();
@@ -63,7 +63,7 @@ ostream& operator<<(ostream& os, const mathLine& dt){
     return os;
 }
 ostream& operator<<(ostream& os, const candidate& dt){
-    os << "Canditate[" << dt.index << "] Angle(" << dt.angle*180/M_PI << ") Offset(" << dt.offset << ")";
+    os << "Canditate[" << dt.index << "] Angle(" << dt.angle*180/M_PI << ") Offset(" << dt.offset << ") Error(" << dt.error << ")";
     return os;
 }
 
