@@ -32,6 +32,8 @@
 #define LINE_PARALLEL_ACTIVE false              //activate for extra sorting if nessesary
 #define LINE_PARALLEL_MAX_ANGLE 5.0f            //Angle in deg
 
+#define MATCHING_LINE_MAX_ERROR 12
+
 using namespace std;
 
 struct mathLine{
@@ -78,7 +80,30 @@ deque<inspec_msg::line2d_array> lineEstimates;
 size_t img_num;
 size_t estimate_num;
 bool gotImage = false;
-
+// ############### CONVERTERS #########################
+mathLine ros2mathLine(inspec_msg::line2d line){
+    mathLine ret;
+    double t = line.x0/line.dx;
+    ret.b =  line.y0-line.dy*t;
+    ret.a = line.dy/line.dx;
+    
+    return ret;
+}
+inspec_msg::line2d mathLine2ros(mathLine mline, uint id = 0){
+    inspec_msg::line2d msg_line;
+    msg_line.dx = 1;
+    msg_line.dy = mline.a;
+    msg_line.x0 = 0;
+    msg_line.y0 = mline.b;
+    msg_line.id = id;
+    return msg_line;
+}
+double rad2deg(const double &angle){
+    return angle*180/M_PI;
+}
+double deg2rad(const double &angle){
+    return angle*M_PI/180;
+}
 // ############## DEBUG ALGORITHMS ########################
 void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::namedWindow(name,cv::WINDOW_NORMAL);
@@ -171,12 +196,7 @@ lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
 
     return parallelLines;
 }
-double rad2deg(const double &angle){
-    return angle*180/M_PI;
-}
-double deg2rad(const double &angle){
-    return angle*M_PI/180;
-}
+
 double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
     double length1 = sqrt(pow(l1.dx,2)+pow(l1.dy,2));
     double length2 = sqrt(pow(l2.dx,2)+pow(l2.dy,2));
@@ -184,23 +204,62 @@ double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
     double angle = dot/(length1*length2);
     return abs(acos(angle));
 }
+void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine> &slots, const vector<inspec_msg::line2d> &sockets){
+    vector<bool> matched(slots.size());
+    if(!sockets.empty()){
+        vector<priority_queue<candidate>> candList(sockets.size());
+        vector<priority_queue<candidate>> curLine_candList(slots.size());
+
+
+        // ############# Find Error and Prioritys between slots and sockets ###########################
+        vector<int> claims(slots.size());
+        for(uint i = 0; i < sockets.size(); i++){
+            cout << "#############" << endl<< "Line: " << sockets[i].id << endl;
+            for(uint j = 0; j < slots.size(); j++ ){
+                candidate c(
+                    vecAngle(sockets[i],mathLine2ros(slots[j])),
+                    ros2mathLine(sockets[i]).b - slots[j].b,
+                    j
+                );
+                if(c.error < MATCHING_LINE_MAX_ERROR){
+                    candList[i].push(c);
+                    c.index = i;
+                    curLine_candList[j].push(c);
+                }
+            }
+            //cout << "Top pic " << candList[i].top().index << endl;
+            claims[candList[i].top().index]++;
+        }
+
+        // ####################### Match The Lines #########################          
+        for(int i = 0; i < candList.size(); i++){
+            if(!candList[i].empty()){
+                int cand = candList[i].top().index;
+                if(claims[cand] == 1){
+                    matched[cand] = true;
+                    result.push_back(mathLine2ros(slots[cand],sockets[i].id));
+                    cout << "Matched EST: " << i << " & Line: " << cand << " with Error: "<< candList[i].top().error << endl;
+                }
+            }
+        }
+        for(int i = 0; i < candList.size(); i++){
+            while(!candList[i].empty()){
+                cout << candList[i].top() << endl;
+                candList[i].pop();
+            }
+        }
+    }
+
+    //################### Add unmatched Lines ##########################
+    for(int i = 0; i < matched.size(); i++){
+        if(!matched[i]){
+            result.push_back(mathLine2ros(slots[i]));
+        }
+    }
+}
+
 // ############### ROS FUNCTIONS #########################
-mathLine ros2mathLine(inspec_msg::line2d line){
-    mathLine ret;
-    double t = line.x0/line.dx;
-    ret.b =  line.y0-line.dy*t;
-    ret.a = line.dy/line.dx;
-    
-    return ret;
-}
-inspec_msg::line2d mathLine2ros(mathLine mline){
-    inspec_msg::line2d msg_line;
-    msg_line.dx = 1;
-    msg_line.dy = mline.a;
-    msg_line.x0 = 0;
-    msg_line.y0 = mline.b;
-    return msg_line;
-}
+
 void image_handler(sensor_msgs::Image msg){
     //cv::Mat img = cv::Mat(msg.data);
     cout << "Image Num: " << msg.header.seq << endl;
@@ -220,9 +279,9 @@ void image_handler(sensor_msgs::Image msg){
 void estimate_handler(inspec_msg::line2d_array msg){
     cout << "Recived Estimated Lines: " << msg.header.seq << " Size: "<< msg.lines.size() << endl;
     lineEstimates.push_back(msg);
-    for(auto line: msg.lines){
+    /*for(auto line: msg.lines){
         mathLine m = ros2mathLine(line);
-    }
+    }*/
     
     if(msg.header.seq != img_num){
         cerr << "Estimate out of sync" << endl;
@@ -238,6 +297,15 @@ void PublishLinesToRos(vector<mathLine> lines){
         inspec_msg::line2d msg_line = mathLine2ros(lines[i]);
         msg.lines.push_back(msg_line);
     }
+    line_pub.publish(msg);
+}
+void PublishLinesToRos(vector<inspec_msg::line2d> &lines){
+    inspec_msg::line2d_array msg;
+    inspec_msg::head h;
+    h.seq = img_num;
+    h.stamp = ros::Time::now();
+    msg.header = h;
+    msg.lines = lines;
     line_pub.publish(msg);
 }
 void syncEstimateLines(){
@@ -297,40 +365,15 @@ int main(int argc, char* argv[]){
         // ################ Line Matching ########################
         cout << "Line Mathcher" << endl;
         
-        if(!lineEstimates.empty()){
-            vector<priority_queue<candidate>> candList(lineEstimates.front().lines.size());
-            vector<int> claims(currentLines.size());
-            for(uint i = 0; i < lineEstimates.front().lines.size(); i++){
-                cout << "#############" << endl<< "Line: " << lineEstimates.front().lines[i].id << endl;
-                for(uint j = 0; j < currentLines.size(); j++ ){
-                    candidate c(
-                        vecAngle(lineEstimates.front().lines[i],mathLine2ros(currentLines[j])),
-                        ros2mathLine(lineEstimates.front().lines[i]).b - currentLines[j].b,
-                        j
-                    );
-                    candList[i].push(c);
-                }
-                /*while(!candList[i].empty()){
-                    cout << candList[i].top() << endl;
-                    candList[i].pop();
-                }*/
-                cout << "Top pic " << candList[i].top().index << endl;
-                claims[candList[i].top().index]++;
-            }
-            vector<inspec_msg::line2d> matched_lines(currentLines.size());
-            for(int i = 0; i < candList.size(); i++){
-                if(claims[candList[i].top().index] == 1){
-
-                }else{
-                    
-                }
-            }
+        vector<inspec_msg::line2d> matched_lines;
+        if(lineEstimates.empty()){
+            matchingAlgorithm(matched_lines,currentLines,vector<inspec_msg::line2d>() );
+        }else{
+            matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
         }
         
-
-
         // ################ Finalize #############################
-        PublishLinesToRos(currentLines);
+        PublishLinesToRos(matched_lines);
         cout << "Published Lines To Ros" << endl << endl;
         gotImage = false;
         //################# DEBUG ################################
