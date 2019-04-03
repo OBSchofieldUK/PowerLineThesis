@@ -32,7 +32,7 @@
 #define LINE_PARALLEL_ACTIVE false              //activate for extra sorting if nessesary
 #define LINE_PARALLEL_MAX_ANGLE 5.0f            //Angle in deg
 
-#define MATCHING_LINE_MAX_ERROR 12
+#define MATCHING_LINE_MAX_ERROR 15
 
 using namespace std;
 
@@ -49,7 +49,7 @@ class candidate{
         this->errorCal();
     }
     void errorCal(){
-        this->error = abs((this->offset/15)*M_PI/180)+ this->angle;
+        this->error = abs((this->offset/10))+ this->angle*180/M_PI;
     }
     bool operator< (const candidate &rhs) const{
         return this->error > rhs.error;
@@ -111,14 +111,24 @@ void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::resizeWindow(name, 600,500);
     cv::imshow(name, img);
 }
-void drawMathLine(cv::Mat &dst, mathLine line, cv::Scalar color = cv::Scalar(255,255,255)){
+void drawMathLine(cv::Mat &dst, mathLine line, cv::Scalar color = cv::Scalar(255,255,255),string text = "",cv::Scalar textColor = cv::Scalar(255,255,255)){
+    int x_max = 1920;
     for(int x = 0; x< dst.cols; x++){
         double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
         double a = -line.a;
         int y = a*x+b;
         if(y > 0 && y < dst.rows){
             dst.at<cv::Vec3b>(cv::Point(x,y)) = {uchar(color[0]),uchar(color[1]),uchar(color[2])};
+        }else if(x_max == 1920){
+            x_max=x;
         }
+    }
+    if(!text.empty()){
+        double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
+        double a = -line.a;
+        int y = a*x_max/2+b;
+
+        cv::putText(dst,text,cv::Point(x_max/2,y),cv::FONT_HERSHEY_SIMPLEX,1,textColor,2);
     }
 }
 
@@ -204,7 +214,7 @@ double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
     double angle = dot/(length1*length2);
     return abs(acos(angle));
 }
-void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine> &slots, const vector<inspec_msg::line2d> &sockets){
+void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine> &slots, const vector<inspec_msg::line2d> &sockets, bool DEBUG = true){
     vector<bool> matched(slots.size());
     if(!sockets.empty()){
         vector<priority_queue<candidate>> candList(sockets.size());
@@ -214,7 +224,6 @@ void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine
         // ############# Find Error and Prioritys between slots and sockets ###########################
         vector<int> claims(slots.size());
         for(uint i = 0; i < sockets.size(); i++){
-            cout << "#############" << endl<< "Line: " << sockets[i].id << endl;
             for(uint j = 0; j < slots.size(); j++ ){
                 candidate c(
                     vecAngle(sockets[i],mathLine2ros(slots[j])),
@@ -228,7 +237,7 @@ void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine
                 }
             }
             //cout << "Top pic " << candList[i].top().index << endl;
-            claims[candList[i].top().index]++;
+            if(!candList[i].empty()) claims[candList[i].top().index]++;
         }
 
         // ####################### Match The Lines #########################          
@@ -242,15 +251,20 @@ void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine
                 }
             }
         }
-        for(int i = 0; i < candList.size(); i++){
-            while(!candList[i].empty()){
-                cout << candList[i].top() << endl;
-                candList[i].pop();
+
+        if(DEBUG){
+            for(int i = 0; i < candList.size(); i++){
+                cout << endl << "######## Line: " << sockets[i].id << "#################" << endl;
+                while(!candList[i].empty()){
+                    cout << candList[i].top() << endl;
+                    candList[i].pop();
+                }
             }
         }
     }
 
     //################### Add unmatched Lines ##########################
+    cout << "Matching " << "Tidying up" << endl;
     for(int i = 0; i < matched.size(); i++){
         if(!matched[i]){
             result.push_back(mathLine2ros(slots[i]));
@@ -373,8 +387,8 @@ int main(int argc, char* argv[]){
         }
         
         // ################ Finalize #############################
-        PublishLinesToRos(matched_lines);
         cout << "Published Lines To Ros" << endl << endl;
+        PublishLinesToRos(matched_lines);
         gotImage = false;
         //################# DEBUG ################################
 
@@ -382,14 +396,26 @@ int main(int argc, char* argv[]){
         cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
 
         cout << "Drawing Found Lines" << endl;
-        PLineD::printContours(out, lines);
-        for(int i = 0; i < currentLines.size(); i++){
-            drawMathLine(out,currentLines[i]);
+        //PLineD::printContours(out, lines);
+
+        map<int,bool> drawn;
+        for(int i = 0; i < matched_lines.size(); i++){
+            if(matched_lines[i].id != 0){
+                drawn[matched_lines[i].id] = true;
+                drawMathLine(out,ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
+            }else{
+                drawMathLine(out,ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255));
+            }
+            
         }
         cout << "Drawing EST Lines" << endl;
         if(!lineEstimates.empty()){
             for(inspec_msg::line2d line: lineEstimates.front().lines){
-                drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,0));
+                if(!drawn[line.id]){
+                    drawMathLine(out,ros2mathLine(line),cv::Scalar(255,255,0));
+                }else{
+                    drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,150),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                }
             }
         }
 

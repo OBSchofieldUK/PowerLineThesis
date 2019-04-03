@@ -19,7 +19,7 @@
 #include <inspec_msg/line3d_array.h>
 #include <inspec_msg/position.h>
 
-#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1
+#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 3
 #define X0 0
 #define Y0 1
 #define Z0 2
@@ -59,7 +59,10 @@ struct lineEstimate{
     size_t lastObserved;
     size_t consecutiveObservations;
 };
-
+ostream& operator<<(ostream& os, const inspec_msg::line2d& dt){
+    os << "line: " << dt.id << "pos(" << dt.x0 << ", " << dt.y0 << ") dir(" << dt.dx << ", " << dt.dy << ")";
+    return os;
+}
 
 // #### ROS Variables #####
 ros::Subscriber line_sub;
@@ -313,7 +316,7 @@ void addNewLine(inspec_msg::line2d line2d){
     newLine.consecutiveObservations++;
     newLine.P = P_initial_diag;
     newLine.line2d = ros2line(line2d);
-    newLine.X_hat = line2dTo3d(newLine.line2d,currentCam); //TODO correct this for better start guess
+    newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,5,0.3); //TODO correct this for better start guess
     ActiveLines[newLine.id] = newLine;
 }
 void removeLine(lineEstimate line){
@@ -328,12 +331,14 @@ void updateLineEstimate(lineEstimate &line, const Matrix7 &F){
     line.line2d = line3dTo2d(line.X_hat,currentCam);
 
 }
-void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data){
-    //Rx = diag(sigma_r)*(Hx*Hx')*diag(sigma_r)'
-    //S = Hx*Px*Hx'+Rx;
-    //K = (Px*Hx')/S;
-    //Px = Px-K*Hx*Px;
-    //Xx_hat =  Xx_hat + K*(z(1)-Hx*Xx_hat);
+void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data,int max_it =10){
+    /*  Rx = diag(sigma_r)*(Hx*Hx')*diag(sigma_r)'
+        S = Hx*Px*Hx'+Rx;
+        K = (Px*Hx')/S;
+        Px = Px-K*Hx*Px;
+        Xx_hat =  Xx_hat + K*(z(1)-Hx*Xx_hat);*/
+    
+    
     if(image_seq - theLine.lastObserved == 1){
         theLine.consecutiveObservations++;
     }else{
@@ -341,8 +346,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     }
     theLine.lastObserved = image_seq;
 
-    Vector4d Z(correction_data.x0,correction_data.y0,correction_data.dx,correction_data.dy);
-    NormalizeLine(Z);
+    Vector4d Z = ros2line(correction_data);
     Matrix4x7 H = H_matrix(theLine.X_hat,currentCam);
     const Matrix4 &R = Sigma_r_diag*H*H.transpose()*Sigma_r_diag.transpose();
 
@@ -351,7 +355,10 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     theLine.P = theLine.P - K*H*theLine.P;
     theLine.X_hat = theLine.X_hat + K*(Z-theLine.line2d);
     NormalizeLine(theLine.X_hat);
+
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
+    cout << "Line " << theLine.id << " - " << theLine.X_hat.transpose() << endl;
+
 }
 
 rw::math::Quaternion<double> diffAngle(const rw::math::Quaternion<double> &end, const rw::math::Quaternion<double> &start){
