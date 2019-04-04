@@ -59,9 +59,9 @@ namespace Matcher{
             const int x_point = 1920/2;
             for(uint i = 0; i < sockets.size(); i++){
                 for(uint j = 0; j < slots.size(); j++ ){
-                    math::mathLine2d socket = math::ros2mathLine(sockets[i]);
+                    math::mathLine2d socket = converter::ros2mathLine(sockets[i]);
                     candidate c(
-                        math::vecAngle(sockets[i],mathLine2ros(slots[j])),
+                        math::vecAngle(sockets[i],converter::mathLine2ros(slots[j])),
                         socket.b - slots[j].b,
                         j
                     );
@@ -85,7 +85,7 @@ namespace Matcher{
                 if(result_tmp.first[i].valid){
                     int index = result_tmp.first[i].index;
                     matched[index] = true;
-                    result.push_back(mathLine2ros(slots[index],sockets[i].id));
+                    result.push_back(converter::mathLine2ros(slots[index],sockets[i].id));
                 }
             }
 
@@ -102,7 +102,7 @@ namespace Matcher{
         //cout << "Matching " << "Tidying up" << endl;
         for(int i = 0; i < matched.size(); i++){
             if(!matched[i]){
-                result.push_back(mathLine2ros(slots[i]));
+                result.push_back(converter::mathLine2ros(slots[i]));
             }
         }
     }

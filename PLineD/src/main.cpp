@@ -159,7 +159,7 @@ void PublishLinesToRos(vector<mathLine> lines){
     h.stamp = ros::Time::now();
     msg.header = h;
     for(int i = 0; i < lines.size(); i++){
-        inspec_msg::line2d msg_line = mathLine2ros(lines[i]);
+        inspec_msg::line2d msg_line = converter::mathLine2ros(lines[i]);
         msg.lines.push_back(msg_line);
     }
     line_pub.publish(msg);
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]){
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     ShowImage("TestImage",BLACK);
     ShowImage("PLineD",BLACK,50,600);
-
+    cv::waitKey(1);
     // ############## Initialize Variables #############
     Matcher::LINE_MAX_ERROR = MATCHER_LINE_MAX_ERROR;
     Matcher::NO_MATCH_COST = MATCHER_NO_MATCH_COST;
@@ -254,9 +254,9 @@ int main(int argc, char* argv[]){
         for(int i = 0; i < matched_lines.size(); i++){
             if(matched_lines[i].id != 0){
                 drawn[matched_lines[i].id] = true;
-                math::drawMathLine(out,math::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
+                math::drawMathLine(out,converter::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
             }else{
-                math::drawMathLine(out,math::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
+                math::drawMathLine(out,converter::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
             }
             
         }
@@ -264,9 +264,9 @@ int main(int argc, char* argv[]){
         if(!lineEstimates.empty()){
             for(inspec_msg::line2d line: lineEstimates.front().lines){
                 if(!drawn[line.id]){
-                    math::drawMathLine(out,math::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
+                    math::drawMathLine(out,converter::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
                 }else{
-                    math::drawMathLine(out,math::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                    math::drawMathLine(out,converter::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
                 }
             }
         }

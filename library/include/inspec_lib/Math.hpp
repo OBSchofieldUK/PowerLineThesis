@@ -14,8 +14,7 @@ namespace math{
     };
 
     // ############### CONVERTERS ###################
-    mathLine2d ros2mathLine(inspec_msg::line2d line);
-    inspec_msg::line2d mathLine2ros(mathLine2d mline, uint id = 0);
+    
     double rad2deg(const double &angle);
     double deg2rad(const double &angle);
 
