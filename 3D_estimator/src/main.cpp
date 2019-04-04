@@ -381,7 +381,7 @@ void line_handler(inspec_msg::line2d_array msg){
             try{
                 lineEstimate &line = ActiveLines.at(size_t(msg.lines[i].id));
                 correctLineEstimate(line,msg.lines[i]);
-                cout << "Correcting Lines" << endl;
+                //cout << "Correcting Lines" << endl;
             }catch(const std::out_of_range& oor) {
                 addNewLine(msg.lines[i]);
             }  
