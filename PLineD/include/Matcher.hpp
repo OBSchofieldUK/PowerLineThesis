@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-#include "Math.hpp"
+#include <inspec_lib/Math.hpp>
 
 namespace Matcher{
     extern double LINE_MAX_ERROR;

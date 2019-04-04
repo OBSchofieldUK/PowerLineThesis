@@ -46,17 +46,20 @@ using namespace std;
 
 typedef math::mathLine2d mathLine;
 
+// ###### ROS Variables #########
 ros::NodeHandle* nh;
 ros::Subscriber estimate_sub;
 ros::Subscriber image_sub;
 ros::Publisher line_pub;
 
+// ###### Node Variables #########
 cv::Mat img;
 vector<mathLine> currentLines;
 deque<inspec_msg::line2d_array> lineEstimates;
 size_t img_num;
 size_t estimate_num;
 bool gotImage = false;
+
 // ############## DEBUG ALGORITHMS ########################
 void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::namedWindow(name,cv::WINDOW_NORMAL);
@@ -66,7 +69,7 @@ void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
 }
 
 
-// ############### OTHER #################################
+// ############### PLineD #################################
 lineSeg PLineD_full(cv::Mat &src){
     
     //########## Find Contours #############
@@ -123,8 +126,6 @@ lineSeg PLineD_full(cv::Mat &src){
     return parallelLines;
 }
 
-
-
 // ############### ROS FUNCTIONS #########################
 
 void image_handler(sensor_msgs::Image msg){
@@ -146,9 +147,6 @@ void image_handler(sensor_msgs::Image msg){
 void estimate_handler(inspec_msg::line2d_array msg){
     cout << "Recived Estimated Lines: " << msg.header.seq << " Size: "<< msg.lines.size() << endl;
     lineEstimates.push_back(msg);
-    /*for(auto line: msg.lines){
-        mathLine m = ros2mathLine(line);
-    }*/
     
     if(msg.header.seq != img_num){
         cerr << "Estimate out of sync" << endl;
@@ -179,6 +177,7 @@ void syncEstimateLines(){
     ros::spinOnce();
     if(lineEstimates.empty()){
         cout << "No Line Estimates Available" << endl;
+        lineEstimates.push_back(inspec_msg::line2d_array());
         return;
     }
     if(lineEstimates.front().header.seq > img_num){
@@ -236,12 +235,8 @@ int main(int argc, char* argv[]){
         // ################ Line Matching ########################
         cout << "Line Mathcher" << endl;
         
-        vector<inspec_msg::line2d> matched_lines;
-        if(lineEstimates.empty()){
-            Matcher::matchingAlgorithm(matched_lines,currentLines,vector<inspec_msg::line2d>() );
-        }else{
-            Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
-        }
+        vector<inspec_msg::line2d> matched_lines; 
+        Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
         
         // ################ Finalize #############################
         cout << "Published Lines To Ros" << endl << endl;
