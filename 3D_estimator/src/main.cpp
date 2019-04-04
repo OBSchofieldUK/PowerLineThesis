@@ -19,7 +19,7 @@
 #include <inspec_msg/line3d_array.h>
 #include <inspec_msg/position.h>
 
-#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 3
+#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1
 #define X0 0
 #define Y0 1
 #define Z0 2
@@ -277,7 +277,7 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
 }
 
 
-// ########################## Other #################################
+// ########################## ROS Helper Functions #################################
 inspec_msg::line2d line2ros(const Vector4d &line){
     inspec_msg::line2d ret;
     ret.x0 = line(0);
@@ -303,6 +303,8 @@ Vector4d ros2line(const inspec_msg::line2d line){
     return v;
 }
 
+
+//############################ OTHER  ################################################
 void addNewLine(inspec_msg::line2d line2d){
     lineEstimate newLine;
 
@@ -357,7 +359,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     NormalizeLine(theLine.X_hat);
 
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
-    cout << "Line " << theLine.id << " - " << theLine.X_hat.transpose() << endl;
+    //cout << "Line " << theLine.id << " - " << theLine.X_hat.transpose() << endl;
 
 }
 
@@ -397,7 +399,7 @@ void position_handler(inspec_msg::position msg){
         rw::math::Quaternion<double> new_ori(msg.Orientation_quat[0],msg.Orientation_quat[1],msg.Orientation_quat[2],msg.Orientation_quat[3]);
 
         rw::math::Quaternion<double> dA = diffAngle(last_ori,new_ori);
-
+        cout << "Orientation: "<< rw::math::RPY<>(new_ori.toRotation3D()) << endl;
         Matrix7 F = F_matrix(new_pos-last_pos,
                              dA);
         

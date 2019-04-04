@@ -32,7 +32,11 @@
 #define LINE_PARALLEL_ACTIVE false              //activate for extra sorting if nessesary
 #define LINE_PARALLEL_MAX_ANGLE 5.0f            //Angle in deg
 
-#define MATCHING_LINE_MAX_ERROR 15
+#define MATCHING_LINE_MAX_ERROR 30
+#define MATCHER_NO_MATCH_COST MATCHING_LINE_MAX_ERROR
+
+#define DEBUG_PLINED false
+#define DEBUG true
 
 using namespace std;
 
@@ -44,20 +48,22 @@ struct mathLine{
 class candidate{
 
  public:
-    candidate():angle(0),offset(0),index(0),error(0){}
-    candidate(double angle,double offset,double index):angle(angle),offset(offset),index(index){
+    candidate():angle(0),offset(0),index(0),error(MATCHER_NO_MATCH_COST),valid(false){}
+    candidate(double angle,double offset,double index):angle(angle),index(index),valid(true){
+        this->offset = abs(offset);
         this->errorCal();
     }
     void errorCal(){
-        this->error = abs((this->offset/10))+ this->angle*180/M_PI;
+        this->error = ((this->offset/5))*(1+int(this->offset/100))+ this->angle*180/M_PI;
     }
     bool operator< (const candidate &rhs) const{
-        return this->error > rhs.error;
+        return this->error < rhs.error;
     }
     double angle;
     double offset;
     double error;
     uint index;
+    bool valid;
 };
 
 ostream& operator<<(ostream& os, const mathLine& dt){
@@ -113,22 +119,26 @@ void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
 }
 void drawMathLine(cv::Mat &dst, mathLine line, cv::Scalar color = cv::Scalar(255,255,255),string text = "",cv::Scalar textColor = cv::Scalar(255,255,255)){
     int x_max = 1920;
+    int x_min = -1;
     for(int x = 0; x< dst.cols; x++){
         double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
         double a = -line.a;
         int y = a*x+b;
         if(y > 0 && y < dst.rows){
             dst.at<cv::Vec3b>(cv::Point(x,y)) = {uchar(color[0]),uchar(color[1]),uchar(color[2])};
-        }else if(x_max == 1920){
-            x_max=x;
+            if(x_min == -1) x_min = x;
+            
+        }else if(x_max == 1920 && x_min != -1){
+            x_max=x-1;
         }
     }
-    if(!text.empty()){
+    if(!text.empty() && x_min != -1){
         double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
         double a = -line.a;
-        int y = a*x_max/2+b;
+        double x = x_min+(x_max-x_min) / (1080/b);
+        int y = a*x+b;
 
-        cv::putText(dst,text,cv::Point(x_max/2,y),cv::FONT_HERSHEY_SIMPLEX,1,textColor,2);
+        cv::putText(dst,text,cv::Point(x,y),cv::FONT_HERSHEY_SIMPLEX,1,textColor,2);
     }
 }
 
@@ -151,7 +161,7 @@ mathLine leastSquareRegression(std::vector<cv::Point> aLine){ // Should be const
     ret.b = (y_sum-ret.a*x_sum)/N;
     return ret;
 }
-lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
+lineSeg PLineD_full(cv::Mat &src){
     
     //########## Find Contours #############
     cv::Mat src_gray;
@@ -197,7 +207,7 @@ lineSeg PLineD_full(cv::Mat &src,bool DEBUG=false){
     }
     //
     //Show Results
-    if(DEBUG){
+    if(DEBUG_PLINED){
         cv::Mat out(src_gray.rows, src_gray.cols, CV_8UC3, cv::Scalar(0,0,0));
         PLineD::printContours(out, parallelLines);
         cv::imshow("PLineD",out);
@@ -214,51 +224,91 @@ double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
     double angle = dot/(length1*length2);
     return abs(acos(angle));
 }
-void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine> &slots, const vector<inspec_msg::line2d> &sockets, bool DEBUG = true){
+
+pair<vector<candidate>,double> match_loop(vector<vector<candidate>> &candList,int i,vector<bool> not_available,double solution_cost,vector<candidate> Solution, double &Max_solution_cost){
+    if(i >= candList.size()){
+        if(DEBUG){
+            cout <<endl << "############ Solution ##########" << endl;
+            for(auto cand: Solution) cout << cand << endl;
+        }
+        if(solution_cost < Max_solution_cost) Max_solution_cost = solution_cost;
+        return pair<vector<candidate>,double>(Solution,solution_cost);
+    }
+
+    pair<vector<candidate>,double> bedst_solution;
+    bedst_solution.second = 9999999;
+
+    for(int k = 0; k < candList[i].size(); k++){
+        if(solution_cost+candList[i][k].error < Max_solution_cost){
+            if(!not_available[candList[i][k].index]){
+
+                if(candList[i][k].valid) not_available[candList[i][k].index] = true;
+
+                Solution[i] = candList[i][k];
+                pair<vector<candidate>,double> tmp_solution = match_loop(   candList,
+                                                                            i+1,
+                                                                            not_available,
+                                                                            solution_cost+candList[i][k].error,
+                                                                            Solution,
+                                                                            Max_solution_cost
+                                                                            );
+                if(tmp_solution.second< bedst_solution.second) bedst_solution = tmp_solution;
+
+                if(candList[i][k].valid) not_available[candList[i][k].index] = false;
+            }
+        }
+    }
+
+    return bedst_solution;
+
+}
+
+void matchingAlgorithm(vector<inspec_msg::line2d> &result, const vector<mathLine> &slots, const vector<inspec_msg::line2d> &sockets){
     vector<bool> matched(slots.size());
     if(!sockets.empty()){
-        vector<priority_queue<candidate>> candList(sockets.size());
-        vector<priority_queue<candidate>> curLine_candList(slots.size());
+        vector<vector<candidate>> candList(sockets.size());
+        vector<vector<candidate>> curLine_candList(slots.size());
 
 
         // ############# Find Error and Prioritys between slots and sockets ###########################
-        vector<int> claims(slots.size());
+        const int x_point = 1920/2;
         for(uint i = 0; i < sockets.size(); i++){
             for(uint j = 0; j < slots.size(); j++ ){
+                mathLine socket = ros2mathLine(sockets[i]);
                 candidate c(
                     vecAngle(sockets[i],mathLine2ros(slots[j])),
-                    ros2mathLine(sockets[i]).b - slots[j].b,
+                    socket.b - slots[j].b,
                     j
                 );
                 if(c.error < MATCHING_LINE_MAX_ERROR){
-                    candList[i].push(c);
+                    candList[i].push_back(c);
                     c.index = i;
-                    curLine_candList[j].push(c);
+                    curLine_candList[j].push_back(c);
                 }
             }
-            //cout << "Top pic " << candList[i].top().index << endl;
-            if(!candList[i].empty()) claims[candList[i].top().index]++;
+            candList[i].push_back(candidate());
+            if(candList[i].size() > 1) sort(candList[i].begin(),candList[i].end());
+            cout <<endl << "##########" << " Socket: " << sockets[i].id << "########" << endl; 
+            for(auto cand: candList[i]) cout << cand <<endl;
         }
 
-        // ####################### Match The Lines #########################          
-        for(int i = 0; i < candList.size(); i++){
-            if(!candList[i].empty()){
-                int cand = candList[i].top().index;
-                if(claims[cand] == 1){
-                    matched[cand] = true;
-                    result.push_back(mathLine2ros(slots[cand],sockets[i].id));
-                    cout << "Matched EST: " << i << " & Line: " << cand << " with Error: "<< candList[i].top().error << endl;
-                }
+        // ####################### Match The Lines #########################
+        vector<candidate> solution(candList.size());
+        double max_cost = 999999;
+        pair<vector<candidate>,double> result_tmp = match_loop(candList,0,vector<bool>(slots.size()),0,solution,max_cost);
+        for(uint i = 0; i < result_tmp.first.size(); i++){
+            if(result_tmp.first[i].valid){
+                int index = result_tmp.first[i].index;
+                matched[index] = true;
+                result.push_back(mathLine2ros(slots[index],sockets[i].id));
             }
         }
+
 
         if(DEBUG){
-            for(int i = 0; i < candList.size(); i++){
-                cout << endl << "######## Line: " << sockets[i].id << "#################" << endl;
-                while(!candList[i].empty()){
-                    cout << candList[i].top() << endl;
-                    candList[i].pop();
-                }
+            cout << endl << "############# Results ###############" << endl;
+            for(int i = 0; i < result_tmp.first.size(); i++){
+                cout << result_tmp.first[i] << endl;
             }
         }
     }
@@ -354,7 +404,7 @@ int main(int argc, char* argv[]){
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     ShowImage("TestImage",BLACK);
     ShowImage("PLineD",BLACK,50,600);
-    
+    int loop_num = -1;
     while(ros::ok()){
 
         //############## Reset and Wait for Data #####################
@@ -362,12 +412,12 @@ int main(int argc, char* argv[]){
         while(!gotImage && ros::ok()){
             ros::spinOnce();
         }
-
+        loop_num++;
         // ############# Pline D #####################################
-        cout << endl << endl << "###########################################" << endl;
+        std::cout << endl << endl << "###########################################" << endl;
         cout << "Start Work Flow Image: " << img_num << endl;
 
-        lineSeg lines = PLineD_full(img,false);
+        lineSeg lines = PLineD_full(img);
         cout << "PlineD Done found " << lines.size() << " Lines" << endl;
        
 
@@ -395,7 +445,7 @@ int main(int argc, char* argv[]){
 
         cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
 
-        cout << "Drawing Found Lines" << endl;
+        cout << "Drawing Found Lines: " << loop_num << endl;
         //PLineD::printContours(out, lines);
 
         map<int,bool> drawn;
@@ -404,7 +454,7 @@ int main(int argc, char* argv[]){
                 drawn[matched_lines[i].id] = true;
                 drawMathLine(out,ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
             }else{
-                drawMathLine(out,ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255));
+                drawMathLine(out,ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
             }
             
         }
@@ -412,12 +462,13 @@ int main(int argc, char* argv[]){
         if(!lineEstimates.empty()){
             for(inspec_msg::line2d line: lineEstimates.front().lines){
                 if(!drawn[line.id]){
-                    drawMathLine(out,ros2mathLine(line),cv::Scalar(255,255,0));
+                    drawMathLine(out,ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
                 }else{
-                    drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,150),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                    drawMathLine(out,ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
                 }
             }
         }
+        imwrite( "./LineMatch"+to_string(loop_num)+".jpg", out );
 
         cv::imshow("PLineD",out);
         cv::waitKey(1);

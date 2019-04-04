@@ -18,7 +18,7 @@
 #include <inspec_msg/position.h>
 
 
-#define SLOWDOWN_FACTOR 4*30
+#define SLOWDOWN_FACTOR 2*30
 #define RECORD_FOLDER "/home/waarbubble/Dropbox/DroneMasters/PowerLinePhotos/AirSimFlightRecording2/"
 
 using namespace std;
@@ -127,9 +127,9 @@ int main(int argc, char **argv){
         }
         publishImageToRos(img);
         publishPositionToRos(data);
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000*SLOWDOWN_FACTOR/30));
         ros::spinOnce();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000*SLOWDOWN_FACTOR/30));
+        
     }
     return 0;
 }
