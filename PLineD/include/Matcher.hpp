@@ -8,10 +8,8 @@
 #include "Math.hpp"
 
 namespace Matcher{
-    double MATCHER_NO_MATCH_COST = 30;
-    double MATCHING_LINE_MAX_ERROR = 30;
-
-
+    extern double LINE_MAX_ERROR;
+    extern double NO_MATCH_COST;
     // ########### Data TYPES #############
 
     class candidate{

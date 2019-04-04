@@ -16,7 +16,7 @@
 #include <inspec_msg/line2d.h>
 #include <inspec_msg/line2d_array.h>
 
-#include "Math.hpp"
+#include <inspec_lib/Math.hpp>
 #include "Matcher.hpp"
 
 
@@ -36,8 +36,8 @@
 #define LINE_PARALLEL_ACTIVE false              //activate for extra sorting if nessesary
 #define LINE_PARALLEL_MAX_ANGLE 5.0f            //Angle in deg
 
-#define MATCHING_LINE_MAX_ERROR 30
-#define MATCHER_NO_MATCH_COST MATCHING_LINE_MAX_ERROR
+#define MATCHER_LINE_MAX_ERROR 30
+#define MATCHER_NO_MATCH_COST MATCHER_LINE_MAX_ERROR
 
 #define DEBUG_PLINED false
 #define DEBUG true
@@ -207,6 +207,10 @@ int main(int argc, char* argv[]){
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     ShowImage("TestImage",BLACK);
     ShowImage("PLineD",BLACK,50,600);
+
+    // ############## Initialize Variables #############
+    Matcher::LINE_MAX_ERROR = MATCHER_LINE_MAX_ERROR;
+    Matcher::NO_MATCH_COST = MATCHER_NO_MATCH_COST;
     int loop_num = -1;
     while(ros::ok()){
 

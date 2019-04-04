@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
   roscpp
   std_msgs 
   inspec_msg
+  inspec_lib
   cv_bridge 
   )
 find_package(OpenCV REQUIRED)
@@ -101,7 +102,7 @@ include_directories(
 # add_library(${PROJECT_NAME}
 # )
 
-add_executable(${PROJECT_NAME}_node src/main.cpp src/PLineD.cpp)
+add_executable(${PROJECT_NAME}_node src/main.cpp src/PLineD.cpp src/Matcher.cpp src/Math.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node

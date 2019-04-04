@@ -1,12 +1,14 @@
 #include "Matcher.hpp"
 
 namespace Matcher{
+    double NO_MATCH_COST = 30;
+    double LINE_MAX_ERROR = 30;
 
     std::ostream& operator<<(std::ostream& os, const candidate& dt){
         os << "Canditate[" << dt.index << "] Angle(" << dt.angle*180/M_PI << ") Offset(" << dt.offset << ") Error(" << dt.error << ")";
         return os;
     }
-    candidate::candidate():angle(0),offset(0),index(0),error(MATCHER_NO_MATCH_COST),valid(false){}
+    candidate::candidate():angle(0),offset(0),index(0),error(NO_MATCH_COST),valid(false){}
     candidate::candidate(double angle,double offset,double index):angle(angle),index(index),valid(true){
         this->offset = abs(offset);
         this->errorCal();
@@ -63,7 +65,7 @@ namespace Matcher{
                         socket.b - slots[j].b,
                         j
                     );
-                    if(c.error < MATCHING_LINE_MAX_ERROR){
+                    if(c.error < LINE_MAX_ERROR){
                         candList[i].push_back(c);
                         c.index = i;
                         curLine_candList[j].push_back(c);

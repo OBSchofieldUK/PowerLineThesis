@@ -1,4 +1,4 @@
-#include "Math.hpp"
+#include "../include/inspec_lib/Math.hpp"
 
 namespace math{
 
@@ -11,7 +11,7 @@ namespace math{
         
         return ret;
     }
-    inspec_msg::line2d mathLine2ros(mathLine2d mline, uint id = 0){
+    inspec_msg::line2d mathLine2ros(mathLine2d mline, uint id){
         inspec_msg::line2d msg_line;
         msg_line.dx = 1;
         msg_line.dy = mline.a;
