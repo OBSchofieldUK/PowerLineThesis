@@ -6,6 +6,8 @@
 #include <iostream>
 
 #include <inspec_msg/position.h>
+#include <inspec_lib/RosConverters.hpp>
+#include <inspec_lib/Math.hpp>
 
 using namespace std;
 
@@ -16,8 +18,8 @@ ros::Subscriber global_NED_sub;
 rw::math::Vector3D<double> Last_global_pos;
 rw::math::Rotation3D<double> Last_global_rot;
 void NED_QUAT_Position_handler(inspec_msg::position msg){
-    rw::math::Vector3D<double> Last_global_pos;
-    rw::math::Rotation3D<double> Last_global_rot;
+    rw::math::Vector3D<double> Cur_global_pos = ;
+    rw::math::Rotation3D<double> Cur_global_rot;
 }
 
 int main(int argc, char* argv[]){
