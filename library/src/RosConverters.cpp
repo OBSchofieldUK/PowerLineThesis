@@ -1,4 +1,4 @@
-#include "../include/inspec_lib/RosConverters.hpp"
+#include <inspec_lib/RosConverters.hpp>
 
 
 namespace converter{
@@ -19,10 +19,10 @@ namespace converter{
         msg_line.id = id;
         return msg_line;
     }
-    rw::math::Vector3D<double> ros2Vector3D(std::vector<double> vec){
+    rw::math::Vector3D<double> ros2Vector3D(boost::array<double, 3ul> vec){
         return rw::math::Vector3D<double>(vec[0],vec[1],vec[2]);
     }
-    rw::math::Quaternion<double> ros2Quaternion(std::vector<double> vec){
-        return rw::math:Quaternion<double>(vec[0],vec[1],vec[2],vec[3]);
+    rw::math::Quaternion<double> ros2Quaternion(boost::array<double, 4ul> vec){
+        return rw::math::Quaternion<double>(vec[0],vec[1],vec[2],vec[3]);
     }
 }

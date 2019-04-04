@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
   roscpp
   std_msgs 
   inspec_msg
+  inspec_lib
   )
 
 SET(RW_ROOT /home/waarbubble/Programs/RobWork/RobWork)
@@ -24,6 +25,7 @@ catkin_package(
     roscpp
     std_msgs
     inspec_msg
+    inspec_lib
   DEPENDS ROBWORK
 )
 

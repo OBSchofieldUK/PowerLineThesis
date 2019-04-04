@@ -12,8 +12,8 @@ namespace converter{
     math::mathLine2d ros2mathLine(inspec_msg::line2d line);
     inspec_msg::line2d mathLine2ros(math::mathLine2d mline, uint id = 0);
 
-    rw::math::Vector3D<double> ros2Vector3D(std::vector<double> vec);
-    rw::math::Quaternion<double> ros2Quaternion(std::vector<double> vec);
+    rw::math::Vector3D<double> ros2Vector3D(boost::array<double, 3ul> vec);
+    rw::math::Quaternion<double> ros2Quaternion(boost::array<double, 4ul> vec);
 
 }
 
