@@ -177,18 +177,26 @@ void syncEstimateLines(){
     ros::spinOnce();
     if(lineEstimates.empty()){
         cout << "No Line Estimates Available" << endl;
-        lineEstimates.push_back(inspec_msg::line2d_array());
+        lineEstimates.push_back(converter::line2d_array_construct());
+        cout << "size: " << lineEstimates.size() << endl;
         return;
     }
-    if(lineEstimates.front().header.seq > img_num){
-        cerr << "Houston, We have a Problem" <<endl;
-    }else{
-        while(lineEstimates.front().header.seq < img_num){
-            if(lineEstimates.empty()){
-                cout << "No Line Estimates" << endl;
-                break;
+    if(lineEstimates.size() > 1){
+        if(lineEstimates.front().header.seq > img_num){
+            cerr << "Houston, We have a Problem" <<endl;
+        }else{
+            while(lineEstimates.front().header.seq < img_num){
+                if(lineEstimates.empty()){
+                    cout << "No Line Estimates" << endl;
+                    lineEstimates.push_back(converter::line2d_array_construct());
+                    break;
+                }
+                lineEstimates.pop_front();
             }
-            lineEstimates.pop_front();
+        }
+    }else{
+        if(lineEstimates.front().header.seq != img_num){
+            lineEstimates.front() = converter::line2d_array_construct(); 
         }
     }
     cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
@@ -270,7 +278,7 @@ int main(int argc, char* argv[]){
                 }
             }
         }
-        imwrite( "./SimImages/LineMatch"+to_string(loop_num)+".jpg", out );
+        imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
 
         cv::imshow("PLineD",out);
         cv::waitKey(1);

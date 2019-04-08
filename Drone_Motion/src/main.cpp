@@ -20,6 +20,15 @@ rw::math::Rotation3D<double> Last_global_rot;
 void NED_QUAT_Position_handler(inspec_msg::position msg){
     rw::math::Vector3D<double> Cur_global_pos = converter::ros2Vector3D(msg.position);
     rw::math::Rotation3D<double> Cur_global_rot = converter::ros2Quaternion(msg.Orientation_quat).toRotation3D();
+
+    rw::math::Vector3D<double> global_relative_pos = Cur_global_pos - Last_global_pos;
+    cout << "Global relative pos: " << global_relative_pos << endl;
+    rw::math::Vector3D<double> local_relative_pos = Last_global_rot*global_relative_pos;
+    cout << "Local relative pos: " << local_relative_pos << endl; 
+
+
+    Last_global_pos = Cur_global_pos;
+    Last_global_rot = Cur_global_rot;
 }
 
 int main(int argc, char* argv[]){
@@ -29,6 +38,6 @@ int main(int argc, char* argv[]){
     motion_pub = nh.advertise<inspec_msg::position>("DroneInfo/Relative/Position",10);
     global_NED_sub = nh.subscribe("/DroneInfo/Position",10,NED_QUAT_Position_handler);
 
-
+    ros::spin();
     return 0;
 }

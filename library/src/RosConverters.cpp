@@ -25,4 +25,12 @@ namespace converter{
     rw::math::Quaternion<double> ros2Quaternion(boost::array<double, 4ul> vec){
         return rw::math::Quaternion<double>(vec[0],vec[1],vec[2],vec[3]);
     }
+
+    inspec_msg::line2d_array line2d_array_construct(std::vector<inspec_msg::line2d> lines, uint seq, ros::Time time){
+        inspec_msg::line2d_array A;
+        A.header.seq = seq;
+        A.header.stamp = time;
+        A.lines = lines;
+        return A;
+    }
 }

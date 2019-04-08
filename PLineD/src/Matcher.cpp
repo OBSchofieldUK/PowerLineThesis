@@ -8,7 +8,9 @@ namespace Matcher{
         os << "Canditate[" << dt.index << "] Angle(" << dt.angle*180/M_PI << ") Offset(" << dt.offset << ") Error(" << dt.error << ")";
         return os;
     }
-    candidate::candidate():angle(0),offset(0),index(0),error(NO_MATCH_COST),valid(false){}
+    candidate::candidate():angle(0),offset(0),index(0),error(NO_MATCH_COST),valid(false){
+        std::cout << "Alocating " << std::endl;
+    }
     candidate::candidate(double angle,double offset,double index):angle(angle),index(index),valid(true){
         this->offset = abs(offset);
         this->errorCal();
@@ -51,9 +53,8 @@ namespace Matcher{
     void matchingAlgorithm(std::vector<inspec_msg::line2d> &result, const std::vector<math::mathLine2d> &slots, const std::vector<inspec_msg::line2d> &sockets){
         std::vector<bool> matched(slots.size());
         if(!sockets.empty()){
+            std::vector<candidate> c(4);
             std::vector<std::vector<candidate>> candList(sockets.size());
-            std::vector<std::vector<candidate>> curLine_candList(slots.size());
-
 
             // ############# Find Error and Prioritys between slots and sockets ###########################
             const int x_point = 1920/2;
@@ -67,8 +68,6 @@ namespace Matcher{
                     );
                     if(c.error < LINE_MAX_ERROR){
                         candList[i].push_back(c);
-                        c.index = i;
-                        curLine_candList[j].push_back(c);
                     }
                 }
                 candList[i].push_back(candidate());
@@ -76,11 +75,11 @@ namespace Matcher{
                 /*std::cout <<endl << "##########" << " Socket: " << sockets[i].id << "########" << std::endl; 
                 for(auto cand: candList[i]) cout << cand <<endl;*/
             }
-
             // ####################### Match The Lines #########################
             std::vector<candidate> solution(candList.size());
             double max_cost = 999999;
             std::pair<std::vector<candidate>,double> result_tmp = match_loop(candList,0,std::vector<bool>(slots.size()),0,solution,max_cost);
+
             for(uint i = 0; i < result_tmp.first.size(); i++){
                 if(result_tmp.first[i].valid){
                     int index = result_tmp.first[i].index;
@@ -88,14 +87,6 @@ namespace Matcher{
                     result.push_back(converter::mathLine2ros(slots[index],sockets[i].id));
                 }
             }
-
-
-            /*if(DEBUG){
-                cout << endl << "############# Results ###############" << endl;
-                for(int i = 0; i < result_tmp.first.size(); i++){
-                    cout << result_tmp.first[i] << endl;
-                }
-            }*/
         }
 
         //################### Add unmatched Lines ##########################
