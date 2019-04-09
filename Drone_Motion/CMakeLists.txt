@@ -14,7 +14,7 @@ find_package(catkin REQUIRED
   inspec_lib
   )
 
-SET(RW_ROOT /home/waarbubble/Programs/RobWork/RobWork)
+SET(RW_ROOT $ENV{RW_ROOT})
 SET(RobWork_DIR ${RW_ROOT}/cmake) 
 
 find_package(RobWork REQUIRED)
