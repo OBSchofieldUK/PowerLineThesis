@@ -1,0 +1,3 @@
+<launch>
+   <node name="image_aquisation" pkg="image_aquisation" type="airsim_img_node" output="screen" />
+</launch>

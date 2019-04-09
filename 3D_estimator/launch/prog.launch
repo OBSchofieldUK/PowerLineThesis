@@ -1,0 +1,3 @@
+<launch>
+   <node name="estimator3d" pkg="estimator3d" type="estimator3d_node" output="screen" />
+</launch>
