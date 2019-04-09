@@ -3,10 +3,10 @@ University of Southern Denmark
 
 # Dependencies
 For the Project to work the following dependencies must be installed
-'''bash
+```bash
 sudo apt-get install ros-kinetic-cv-bridge
 sudo apt-get install ros-kinetic-video-stream-opencv
-'''
+```
 
 The Robwork Libary is also Nessesary to run the system. No need to install all the optinal dependecies and RWSim RWHardvare and RWStudio
 
