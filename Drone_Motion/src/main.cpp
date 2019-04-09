@@ -20,15 +20,34 @@ rw::math::Rotation3D<double> Last_global_rot;
 void NED_QUAT_Position_handler(inspec_msg::position msg){
     rw::math::Vector3D<double> Cur_global_pos = converter::ros2Vector3D(msg.position);
     rw::math::Rotation3D<double> Cur_global_rot = converter::ros2Quaternion(msg.Orientation_quat).toRotation3D();
+    inspec_msg::position return_msg;
 
+
+    // ############# Relative Movement ##################
     rw::math::Vector3D<double> global_relative_pos = Cur_global_pos - Last_global_pos;
-    cout << "Global relative pos: " << global_relative_pos << endl;
     rw::math::Vector3D<double> local_relative_pos = Last_global_rot*global_relative_pos;
-    cout << "Local relative pos: " << local_relative_pos << endl; 
+    local_relative_pos[1] *= -1;
+    cout << "FRU: " << local_relative_pos[0] << ", " << local_relative_pos[1] << ", " << local_relative_pos[2] << endl;
+    return_msg.position = converter::Vector3D2ros(local_relative_pos);
 
+    // ############# Relative Rotation ##################
+    rw::math::Rotation3D<double> global_relative_rot = Cur_global_rot * Last_global_rot.inverse(); //TODO What is done in Matlab code
+    rw::math::EAA<double> local_relative_rot(global_relative_rot);
+    rw::math::Vector3D<double> rotated_dir = Last_global_rot.inverse() * local_relative_rot.axis();
+    rotated_dir[2] *= -1;
+    local_relative_rot = rw::math::EAA<double>(rotated_dir,local_relative_rot.angle());
 
+    cout << "local_rot: " << rw::math::RPY<>(local_relative_rot.toRotation3D()) << endl;
+    return_msg.Orientation_quat = converter::Quaternion2ros(local_relative_rot);
+    
+
+    // ############# Finalize ###########################
     Last_global_pos = Cur_global_pos;
     Last_global_rot = Cur_global_rot;
+
+    return_msg.header = msg.header;
+
+    motion_pub.publish(return_msg);
 }
 
 int main(int argc, char* argv[]){

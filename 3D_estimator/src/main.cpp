@@ -19,6 +19,9 @@
 #include <inspec_msg/line3d_array.h>
 #include <inspec_msg/position.h>
 
+#include <inspec_lib/Math.hpp>
+#include <inspec_lib/RosConverters.hpp>
+
 #define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1
 #define X0 0
 #define Y0 1
@@ -59,10 +62,6 @@ struct lineEstimate{
     size_t lastObserved;
     size_t consecutiveObservations;
 };
-ostream& operator<<(ostream& os, const inspec_msg::line2d& dt){
-    os << "line: " << dt.id << "pos(" << dt.x0 << ", " << dt.y0 << ") dir(" << dt.dx << ", " << dt.dy << ")";
-    return os;
-}
 
 // #### ROS Variables #####
 ros::Subscriber line_sub;
@@ -359,7 +358,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     NormalizeLine(theLine.X_hat);
 
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
-    //cout << "Line " << theLine.id << " - " << theLine.X_hat.transpose() << endl;
+    cout << "Line " << theLine.id << " - " << theLine.X_hat.transpose() << endl;
 
 }
 
@@ -395,16 +394,9 @@ void position_handler(inspec_msg::position msg){
         position_seq = msg.header.seq;
         positionQueue.push_front(msg);
         positionQueue.pop_back();
-        rw::math::Vector3D<double> new_pos(msg.position[0],msg.position[1],msg.position[2]);
-        rw::math::Quaternion<double> new_ori(msg.Orientation_quat[0],msg.Orientation_quat[1],msg.Orientation_quat[2],msg.Orientation_quat[3]);
-
-        rw::math::Quaternion<double> dA = diffAngle(last_ori,new_ori);
-        cout << "Orientation: "<< rw::math::RPY<>(new_ori.toRotation3D()) << endl;
-        Matrix7 F = F_matrix(new_pos-last_pos,
-                             dA);
-        
-        last_pos = new_pos;
-        last_ori = new_ori;
+        rw::math::Vector3D<double> rel_pos(msg.position[0],msg.position[1],msg.position[2]);
+        rw::math::Quaternion<double> rel_ori(msg.Orientation_quat[0],msg.Orientation_quat[1],msg.Orientation_quat[2],msg.Orientation_quat[3]);
+        Matrix7 F = F_matrix(converter::FRU2Image3D(rel_pos),converter::FRU2Image3D(rel_ori));
 
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;
@@ -449,7 +441,7 @@ int main(int argc, char* argv[]){
     Q = G*Sigma_u_diag*Sigma_u_diag.transpose()*G.transpose(); 
     // Initialize ROS publishers and Subscribers
     line_sub = nh.subscribe("/linedetector/lines2d",1,line_handler);
-    position_sub = nh.subscribe("/DroneInfo/Position",10,position_handler);
+    position_sub = nh.subscribe("DroneInfo/Relative/Position",10,position_handler);
     line_pub = nh.advertise<inspec_msg::line3d_array>("/Estimator/lines3d",10);
     line2Dest_pub = nh.advertise<inspec_msg::line2d_array>("/Estimator/lines2d",10);
     

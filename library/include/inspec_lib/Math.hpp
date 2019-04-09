@@ -25,6 +25,7 @@ namespace math{
     // ################ DEBUG #######################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color = cv::Scalar(255,255,255),std::string text = "",cv::Scalar textColor = cv::Scalar(255,255,255));
     std::ostream& operator<<(std::ostream& os, const mathLine2d& dt);
+    std::ostream& operator<<(std::ostream& os, const inspec_msg::line2d& dt);
 }
 
 

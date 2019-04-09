@@ -65,4 +65,9 @@ namespace math{
         os << "y = " << dt.a << "\t * x + " << dt.b ;
         return os;
     }
+
+    std::ostream& operator<<(std::ostream& os, const inspec_msg::line2d& dt){
+        os << "line: " << dt.id << "pos(" << dt.x0 << ", " << dt.y0 << ") dir(" << dt.dx << ", " << dt.dy << ")";
+        return os;
+    }
 }

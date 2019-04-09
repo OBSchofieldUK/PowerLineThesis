@@ -9,7 +9,6 @@ namespace Matcher{
         return os;
     }
     candidate::candidate():angle(0),offset(0),index(0),error(NO_MATCH_COST),valid(false){
-        std::cout << "Alocating " << std::endl;
     }
     candidate::candidate(double angle,double offset,double index):angle(angle),index(index),valid(true){
         this->offset = abs(offset);
@@ -53,7 +52,6 @@ namespace Matcher{
     void matchingAlgorithm(std::vector<inspec_msg::line2d> &result, const std::vector<math::mathLine2d> &slots, const std::vector<inspec_msg::line2d> &sockets){
         std::vector<bool> matched(slots.size());
         if(!sockets.empty()){
-            std::vector<candidate> c(4);
             std::vector<std::vector<candidate>> candList(sockets.size());
 
             // ############# Find Error and Prioritys between slots and sockets ###########################
@@ -72,8 +70,6 @@ namespace Matcher{
                 }
                 candList[i].push_back(candidate());
                 if(candList[i].size() > 1) sort(candList[i].begin(),candList[i].end());
-                /*std::cout <<endl << "##########" << " Socket: " << sockets[i].id << "########" << std::endl; 
-                for(auto cand: candList[i]) cout << cand <<endl;*/
             }
             // ####################### Match The Lines #########################
             std::vector<candidate> solution(candList.size());
@@ -90,7 +86,6 @@ namespace Matcher{
         }
 
         //################### Add unmatched Lines ##########################
-        //cout << "Matching " << "Tidying up" << endl;
         for(int i = 0; i < matched.size(); i++){
             if(!matched[i]){
                 result.push_back(converter::mathLine2ros(slots[i]));
