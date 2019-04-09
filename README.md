@@ -1,6 +1,17 @@
 Drones4Energy - Approximation and Guided Landing on Powerlines MSc Thesis
 University of Southern Denmark
 
+#Dependencies
+
+sudo apt-get install ros-kinetic-cv-bridge
+sudo apt-get install ros-kinetic-video-stream-opencv
+
+The Robwork Libary is also Nessesary to run the system. No need to install all the optinal dependecies and RWSim RWHardvare and RWStudio
+
+
+
+
+#Copyright
 
 Copyright (c) 2018
 
