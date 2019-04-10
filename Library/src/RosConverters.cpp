@@ -1,7 +1,21 @@
 #include <inspec_lib/RosConverters.hpp>
 
+namespace{
+    void NormalizeLine(math::Vector4d &line2d){
+        double l = sqrt(pow(line2d(2),2)+pow(line2d(3),2));
+        double sign = 1;
+        if(line2d(2)<0) sign = -1;
+        line2d(2) = sign*line2d(2)/l;
+        line2d(3) = sign*line2d(3)/l;
+        if(line2d(2)<0);
 
-namespace converter{
+        double t = line2d(0)/line2d(2);
+        line2d(0) = 0;
+        line2d(1) = line2d(1) - t*line2d(3);
+    }
+}
+
+namespace convert{
     math::mathLine2d ros2mathLine(inspec_msg::line2d line){
         math::mathLine2d ret;
         double t = line.x0/line.dx;
@@ -40,12 +54,14 @@ namespace converter{
     boost::array<double, 4ul> Quaternion2ros(rw::math::EAA<double> vec){
         return Quaternion2ros(vec.toRotation3D());
     }
+
     rw::math::Vector3D<double> FRU2Image3D(rw::math::Vector3D<double> vec){
         return rw::math::Vector3D<double>(vec[1],vec[2],vec[0]);
     }
     rw::math::Vector3D<double> Image3D2FRU(rw::math::Vector3D<double> vec){
         return rw::math::Vector3D<double>(vec[2],vec[0],vec[1]);
     }
+    // ###### FRU Angle Converters ######
     rw::math::Quaternion<double> FRU2Image3D(rw::math::Quaternion<double> vec){
         return rw::math::Quaternion<double>(FRU2Image3D(vec.toRotation3D()));
     }
@@ -66,4 +82,24 @@ namespace converter{
         A.lines = lines;
         return A;
     }
+    inspec_msg::line2d line2ros(const math::Vector4d &line){
+        inspec_msg::line2d ret;
+        ret.x0 = line(0);
+        ret.y0 = line(1);
+        ret.dx = line(2);
+        ret.dy = line(3);
+        return ret;
+    }
+    inspec_msg::line3d line2ros(const math::Vector7d &line){
+        inspec_msg::line3d ret;
+        ret.pos = {line(0), line(1), line(2)};
+        ret.dir = {line(4), line(5), line(6)};
+        return ret;
+    }
+    math::Vector4d ros2line(const inspec_msg::line2d line){
+        math::Vector4d v(line.x0,line.y0,line.dx,line.dy);
+        NormalizeLine(v);
+        return v;
+    }
 }
+

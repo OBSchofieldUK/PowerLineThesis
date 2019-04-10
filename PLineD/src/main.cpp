@@ -159,7 +159,7 @@ void PublishLinesToRos(vector<mathLine> lines){
     h.stamp = ros::Time::now();
     msg.header = h;
     for(int i = 0; i < lines.size(); i++){
-        inspec_msg::line2d msg_line = converter::mathLine2ros(lines[i]);
+        inspec_msg::line2d msg_line = convert::mathLine2ros(lines[i]);
         msg.lines.push_back(msg_line);
     }
     line_pub.publish(msg);
@@ -177,7 +177,7 @@ void syncEstimateLines(){
     ros::spinOnce();
     if(lineEstimates.empty()){
         cout << "No Line Estimates Available" << endl;
-        lineEstimates.push_back(converter::line2d_array_construct());
+        lineEstimates.push_back(convert::line2d_array_construct());
         cout << "size: " << lineEstimates.size() << endl;
         return;
     }
@@ -188,7 +188,7 @@ void syncEstimateLines(){
             while(lineEstimates.front().header.seq < img_num){
                 if(lineEstimates.empty()){
                     cout << "No Line Estimates" << endl;
-                    lineEstimates.push_back(converter::line2d_array_construct());
+                    lineEstimates.push_back(convert::line2d_array_construct());
                     break;
                 }
                 lineEstimates.pop_front();
@@ -196,7 +196,7 @@ void syncEstimateLines(){
         }
     }else{
         if(lineEstimates.front().header.seq != img_num){
-            lineEstimates.front() = converter::line2d_array_construct(); 
+            lineEstimates.front() = convert::line2d_array_construct(); 
         }
     }
     cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
@@ -261,9 +261,9 @@ int main(int argc, char* argv[]){
         for(int i = 0; i < matched_lines.size(); i++){
             if(matched_lines[i].id != 0){
                 drawn[matched_lines[i].id] = true;
-                math::drawMathLine(out,converter::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
+                math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
             }else{
-                math::drawMathLine(out,converter::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
+                math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
             }
             
         }
@@ -271,9 +271,9 @@ int main(int argc, char* argv[]){
         if(!lineEstimates.empty()){
             for(inspec_msg::line2d line: lineEstimates.front().lines){
                 if(!drawn[line.id]){
-                    math::drawMathLine(out,converter::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
+                    math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
                 }else{
-                    math::drawMathLine(out,converter::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                    math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
                 }
             }
         }

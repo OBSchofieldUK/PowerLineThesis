@@ -7,7 +7,7 @@
 #include <map>
 
 #include <math.h>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <rw/math.hpp>
 
 #include <ros/ros.h>
@@ -57,7 +57,10 @@ struct lineEstimate{
     Vector7d X_hat;
     Matrix7 P;
     Vector4d line2d;
+    inspec_msg::line2d last_correct;
 
+
+    bool trust_estimate;
     long id;
     size_t lastObserved;
     size_t consecutiveObservations;
@@ -95,7 +98,6 @@ rw::math::Quaternion<double> last_ori;
 deque<inspec_msg::position> positionQueue(10);
 
 // #### System Constants ####
-
 camera currentCam;
 
 // ######################### MATLAB Functions ####################################
@@ -276,31 +278,11 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
 
 
 // ########################## ROS Helper Functions #################################
-inspec_msg::line2d line2ros(const Vector4d &line){
-    inspec_msg::line2d ret;
-    ret.x0 = line(0);
-    ret.y0 = line(1);
-    ret.dx = line(2);
-    ret.dy = line(3);
-    return ret;
-}
-inspec_msg::line3d line2ros(const Vector7d &line){
-    inspec_msg::line3d ret;
-    ret.pos = {line(0), line(1), line(2)};
-    ret.dir = {line(4), line(5), line(6)};
-    return ret;
-}
 inspec_msg::line2d line2ros2D(lineEstimate line){
-    inspec_msg::line2d ret = line2ros(line.line2d);
+    inspec_msg::line2d ret = convert::line2ros(line.line2d);
     ret.id = line.id;
     return ret;
 }
-Vector4d ros2line(const inspec_msg::line2d line){
-    Vector4d v(line.x0,line.y0,line.dx,line.dy);
-    NormalizeLine(v);
-    return v;
-}
-
 
 //############################ OTHER  ################################################
 void addNewLine(inspec_msg::line2d line2d){
@@ -315,7 +297,7 @@ void addNewLine(inspec_msg::line2d line2d){
     newLine.lastObserved = image_seq;
     newLine.consecutiveObservations++;
     newLine.P = P_initial_diag;
-    newLine.line2d = ros2line(line2d);
+    newLine.line2d = convert::ros2line(line2d);
     newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,5,0.3); //TODO correct this for better start guess
     ActiveLines[newLine.id] = newLine;
 }
@@ -345,8 +327,9 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
         theLine.consecutiveObservations = 1;
     }
     theLine.lastObserved = image_seq;
+    theLine.last_correct = correction_data;
 
-    Vector4d Z = ros2line(correction_data);
+    Vector4d Z = convert::ros2line(correction_data);
     Matrix4x7 H = H_matrix(theLine.X_hat,currentCam);
     const Matrix4 &R = Sigma_r_diag*H*H.transpose()*Sigma_r_diag.transpose();
 
@@ -384,8 +367,8 @@ void position_handler(inspec_msg::position msg){
         positionQueue.push_front(msg);
         positionQueue.pop_back();
 
-        Matrix7 F = F_matrix(   converter::FRU2Image3D(converter::ros2Vector3D(msg.position)),
-                                converter::FRU2Image3D(converter::ros2Quaternion(msg.Orientation_quat)));
+        Matrix7 F = F_matrix(   convert::FRU2Image3D(convert::ros2Vector3D(msg.position)),
+                                convert::FRU2Image3D(convert::ros2Quaternion(msg.Orientation_quat)));
 
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;
@@ -403,7 +386,6 @@ void position_handler(inspec_msg::position msg){
         return_msg.header =msg.header;
         return_msg.header.stamp = ros::Time::now();
         line2Dest_pub.publish(return_msg);
-
     }
 }
 
@@ -411,8 +393,8 @@ int main(int argc, char* argv[]){
     ros::init(argc,argv,"estimator3d");
     ros::NodeHandle nh = ros::NodeHandle();
  
-    currentCam.pixel.x = 1270;
-    currentCam.pixel.y = 720;
+    currentCam.pixel.x = 1920;
+    currentCam.pixel.y = 1080;
     currentCam.d = 0.021;
     currentCam.size.x = tan(M_PI*60/180)*currentCam.d;
     currentCam.size.y = currentCam.size.x*(currentCam.pixel.y/currentCam.pixel.x);

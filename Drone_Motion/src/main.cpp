@@ -24,13 +24,13 @@ typedef rw::math::RPY<double> RPY;
 TransM wTs;
 void NED_QUAT_Position_handler(inspec_msg::position msg){
     msg.position[2] *= -1; //Invert z axis to go upwards instead of down
-    TransM wTe(converter::ros2Vector3D(msg.position),converter::ros2Quaternion(msg.Orientation_quat).toRotation3D());
+    TransM wTe(convert::ros2Vector3D(msg.position),convert::ros2Quaternion(msg.Orientation_quat).toRotation3D());
     TransM sTe = rw::math::inverse(wTs)*wTe; 
 
     // ############# Finalize ###########################
     inspec_msg::position return_msg;
-    return_msg.position = converter::Vector3D2ros(sTe.P());
-    return_msg.Orientation_quat = converter::Quaternion2ros(sTe.R());
+    return_msg.position = convert::Vector3D2ros(sTe.P());
+    return_msg.Orientation_quat = convert::Quaternion2ros(sTe.R());
     return_msg.header = msg.header;
 
     wTs = wTe;

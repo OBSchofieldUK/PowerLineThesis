@@ -36,6 +36,13 @@ namespace math{
         double angle = dot/(length1*length2);
         return std::abs(std::acos(angle));
     }
+    
+    double lineError(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
+
+    }
+    double lineError(Vector4d l1, Vector4d l2);
+    double lineError(mathLine2d l1, mathLine2d l2);
+    double lineError(mathLine2d line);
     // ######################## DEBUG #####################################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color,std::string text,cv::Scalar textColor){
         int x_max = dst.rows;
@@ -65,7 +72,6 @@ namespace math{
         os << "y = " << dt.a << "\t * x + " << dt.b ;
         return os;
     }
-
     std::ostream& operator<<(std::ostream& os, const inspec_msg::line2d& dt){
         os << "line: " << dt.id << "pos(" << dt.x0 << ", " << dt.y0 << ") dir(" << dt.dx << ", " << dt.dy << ")";
         return os;
