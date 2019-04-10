@@ -22,7 +22,8 @@
 #include <inspec_lib/Math.hpp>
 #include <inspec_lib/RosConverters.hpp>
 
-#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1
+#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1ul
+#define MAX_ERROR_FOR_EST_MATCHING 1.5f
 #define X0 0
 #define Y0 1
 #define Z0 2
@@ -279,7 +280,13 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
 
 // ########################## ROS Helper Functions #################################
 inspec_msg::line2d line2ros2D(lineEstimate line){
-    inspec_msg::line2d ret = convert::line2ros(line.line2d);
+    inspec_msg::line2d ret;
+    if(line.trust_estimate){
+        ret = convert::line2ros(line.line2d);
+    }else{
+        ret = line.last_correct;
+    } 
+    
     ret.id = line.id;
     return ret;
 }
@@ -340,7 +347,13 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     NormalizeLine(theLine.X_hat);
 
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
-    cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
+    if(math::lineError(theLine.line2d,Z) < MAX_ERROR_FOR_EST_MATCHING){
+        theLine.trust_estimate = true;
+    }else{
+        theLine.trust_estimate = false;
+    }
+    //cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
+    cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
 
 }
 // ########################## ROS handlers ####################################
