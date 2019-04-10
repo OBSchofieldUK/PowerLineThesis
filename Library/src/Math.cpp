@@ -48,14 +48,12 @@ namespace math{
     }
     double lineError(mathLine2d l1, mathLine2d l2){
         return lineError(
-            vecAngle(
-                    convert::mathLine2ros(l1),convert::mathLine2ros(l2),
-                    l1.b-l2.b
-                );
-        )
+                vecAngle(convert::mathLine2ros(l1),convert::mathLine2ros(l2)),
+                l1.b-l2.b
+            );
     }
     double lineError(double angle, double offset){
-        return (offset/5))*(1+int(offset/100))+angle*180/M_PI;
+        return (offset/5)*(1+int(offset/100))+angle*180/M_PI;
     }
     
     // ######################## DEBUG #####################################
