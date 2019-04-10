@@ -10,6 +10,8 @@ sudo apt-get install ros-kinetic-video-stream-opencv
 
 The Robwork Libary is also Nessesary to run the system. No need to install all the optinal dependecies and RWSim RWHardvare and RWStudio
 
+To run the Project open cv is also nessesary. Currently it is tested with Opencv 3.3.1.
+
 # Starting the Project
 
 To Run the Algorithms you must first have a flight Recording from Airsim and change the path to the flight recording in Image_aquisition/src/airsim_images_main.cpp
