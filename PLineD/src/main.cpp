@@ -234,7 +234,6 @@ int main(int argc, char* argv[]){
         lineSeg lines = PLineD_full(img);
         cout << "PlineD Done found " << lines.size() << " Lines" << endl;
        
-
        // ############### Ready Data for Matching #######################
         for(uint i = 0; i < lines.size(); i++){
             currentLines.push_back(math::leastSquareRegression(lines[i],img.size()));

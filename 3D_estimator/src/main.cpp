@@ -117,7 +117,7 @@ Matrix4x7 H_matrix(Vector7d vec, camera cam){
     return ret;
 }
 Matrix7 F_matrix(rw::math::Vector3D<double> vec, rw::math::Quaternion<double> angle){
-    rw::math::Transform3D<double> trans(vec,angle.toRotation3D());
+    rw::math::Transform3D<double> trans = rw::math::inverse(rw::math::Transform3D<double>(vec,angle.toRotation3D()));
     Eigen::Matrix<double,7,7> ret;
     for( int x = 0; x < ret.rows(); x++){      
         for( int y = 0; y < ret.cols();y++){
@@ -128,8 +128,7 @@ Matrix7 F_matrix(rw::math::Vector3D<double> vec, rw::math::Quaternion<double> an
                 ret(x,y) = vec(x);
             }else if(!(y>3 && x>3)){
                 ret(x,y) = 0;
-            }
-            
+            } 
         }
     }
     ret(3,3) = 1;
@@ -358,16 +357,8 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     NormalizeLine(theLine.X_hat);
 
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
-    cout << "Line " << theLine.id << " - " << theLine.X_hat.transpose() << endl;
+    cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
 
-}
-
-rw::math::Quaternion<double> diffAngle(const rw::math::Quaternion<double> &end, const rw::math::Quaternion<double> &start){
-    rw::math::Rotation3D<double> R;
-    R = start.toRotation3D();
-    R.inverse();
-    R = R *end.toRotation3D();
-    return rw::math::Quaternion<double>(R);
 }
 // ########################## ROS handlers ####################################
 
@@ -375,18 +366,16 @@ void line_handler(inspec_msg::line2d_array msg){
     std::cout << "Image Data Recived: " << long(msg.header.seq) << endl;
     if(msg.header.seq > image_seq && msg.header.seq == position_seq){
         image_seq = msg.header.seq;
-        // Update Estimate
+
         for(uint i = 0; i < msg.lines.size(); i++){
             try{
                 lineEstimate &line = ActiveLines.at(size_t(msg.lines[i].id));
                 correctLineEstimate(line,msg.lines[i]);
-                //cout << "Correcting Lines" << endl;
             }catch(const std::out_of_range& oor) {
                 addNewLine(msg.lines[i]);
             }  
         }
     }
-    cout << "Image Data Done" << endl;
 }
 void position_handler(inspec_msg::position msg){
     std::cout << "Position Recived: " << msg.header.seq << endl;
@@ -394,12 +383,13 @@ void position_handler(inspec_msg::position msg){
         position_seq = msg.header.seq;
         positionQueue.push_front(msg);
         positionQueue.pop_back();
-        rw::math::Vector3D<double> rel_pos(msg.position[0],msg.position[1],msg.position[2]);
-        rw::math::Quaternion<double> rel_ori(msg.Orientation_quat[0],msg.Orientation_quat[1],msg.Orientation_quat[2],msg.Orientation_quat[3]);
-        Matrix7 F = F_matrix(converter::FRU2Image3D(rel_pos),converter::FRU2Image3D(rel_ori));
+
+        Matrix7 F = F_matrix(   converter::FRU2Image3D(converter::ros2Vector3D(msg.position)),
+                                converter::FRU2Image3D(converter::ros2Quaternion(msg.Orientation_quat)));
 
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;
+
         for (pair<const long int,lineEstimate> &x : ActiveLines){
             if(position_seq-x.second.lastObserved > MAX_UNOBSERVED_STATES_BEFORE_DELETION){
                 toRemove.push_back(x.second);
@@ -409,12 +399,12 @@ void position_handler(inspec_msg::position msg){
             }      
         }
         for(uint i = 0; i < toRemove.size(); i++) removeLine(toRemove[i]);
+        
         return_msg.header =msg.header;
         return_msg.header.stamp = ros::Time::now();
         line2Dest_pub.publish(return_msg);
 
     }
-    cout << "Done With Position Data" << endl;
 }
 
 int main(int argc, char* argv[]){

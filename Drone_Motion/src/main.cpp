@@ -15,38 +15,25 @@ ros::Publisher motion_pub;
 ros::Subscriber global_NED_sub;
 
 
-rw::math::Vector3D<double> Last_global_pos;
-rw::math::Rotation3D<double> Last_global_rot;
+typedef rw::math::Vector3D<double> Vect;
+typedef rw::math::Quaternion<double> Quat;
+typedef rw::math::Rotation3D<double> RotM;
+typedef rw::math::Transform3D<double> TransM;
+typedef rw::math::RPY<double> RPY;
+
+TransM wTs;
 void NED_QUAT_Position_handler(inspec_msg::position msg){
-    rw::math::Vector3D<double> Cur_global_pos = converter::ros2Vector3D(msg.position);
-    rw::math::Rotation3D<double> Cur_global_rot = converter::ros2Quaternion(msg.Orientation_quat).toRotation3D();
-    inspec_msg::position return_msg;
-
-
-    // ############# Relative Movement ##################
-    rw::math::Vector3D<double> global_relative_pos = Cur_global_pos - Last_global_pos;
-    rw::math::Vector3D<double> local_relative_pos = Last_global_rot*global_relative_pos;
-    local_relative_pos[1] *= -1;
-    cout << "FRU: " << local_relative_pos[0] << ", " << local_relative_pos[1] << ", " << local_relative_pos[2] << endl;
-    return_msg.position = converter::Vector3D2ros(local_relative_pos);
-
-    // ############# Relative Rotation ##################
-    rw::math::Rotation3D<double> global_relative_rot = Cur_global_rot * Last_global_rot.inverse(); //TODO What is done in Matlab code
-    rw::math::EAA<double> local_relative_rot(global_relative_rot);
-    rw::math::Vector3D<double> rotated_dir = Last_global_rot.inverse() * local_relative_rot.axis();
-    rotated_dir[2] *= -1;
-    local_relative_rot = rw::math::EAA<double>(rotated_dir,local_relative_rot.angle());
-
-    cout << "local_rot: " << rw::math::RPY<>(local_relative_rot.toRotation3D()) << endl;
-    return_msg.Orientation_quat = converter::Quaternion2ros(local_relative_rot);
-    
+    msg.position[2] *= -1; //Invert z axis to go upwards instead of down
+    TransM wTe(converter::ros2Vector3D(msg.position),converter::ros2Quaternion(msg.Orientation_quat).toRotation3D());
+    TransM sTe = rw::math::inverse(wTs)*wTe; 
 
     // ############# Finalize ###########################
-    Last_global_pos = Cur_global_pos;
-    Last_global_rot = Cur_global_rot;
-
+    inspec_msg::position return_msg;
+    return_msg.position = converter::Vector3D2ros(sTe.P());
+    return_msg.Orientation_quat = converter::Quaternion2ros(sTe.R());
     return_msg.header = msg.header;
 
+    wTs = wTe;
     motion_pub.publish(return_msg);
 }
 
