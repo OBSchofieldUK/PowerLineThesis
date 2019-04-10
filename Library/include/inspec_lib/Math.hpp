@@ -24,7 +24,7 @@ namespace math{
     double lineError(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2);
     double lineError(Vector4d l1, Vector4d l2);
     double lineError(mathLine2d l1, mathLine2d l2);
-    double lineError(mathLine2d line);
+    double lineError(double angle, double offset);
 
     
     // ################ DEBUG #######################

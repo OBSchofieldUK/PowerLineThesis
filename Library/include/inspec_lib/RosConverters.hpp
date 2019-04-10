@@ -33,6 +33,7 @@ namespace convert{
     inspec_msg::line2d line2ros(const math::Vector4d &line);
     inspec_msg::line3d line2ros(const math::Vector7d &line);
     math::Vector4d ros2line(const inspec_msg::line2d line);
+    math::mathLine2d line2mathLine(const math::Vector4d line);
 
     inspec_msg::line2d_array line2d_array_construct(std::vector<inspec_msg::line2d> lines = std::vector<inspec_msg::line2d>(), uint seq = 0, ros::Time time = ros::Time(0));
 

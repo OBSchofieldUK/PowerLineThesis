@@ -101,5 +101,9 @@ namespace convert{
         NormalizeLine(v);
         return v;
     }
+    math::mathLine2d line2mathLine(const math::Vector4d line){
+        return ros2mathLine(line2ros(line));
+    }
+
 }
 

@@ -15,7 +15,7 @@ namespace Matcher{
         this->errorCal();
     }
     void candidate::errorCal(){
-        this->error = ((this->offset/5))*(1+int(this->offset/100))+ this->angle*180/M_PI;
+        this->error = math::lineError(this->angle, this->offset);
     }
     
     std::pair<std::vector<candidate>,double> match_loop(std::vector<std::vector<candidate>> &candList,int i,std::vector<bool> not_available,double solution_cost,std::vector<candidate> Solution, double &Max_solution_cost){

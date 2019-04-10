@@ -38,11 +38,26 @@ namespace math{
     }
     
     double lineError(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
-
+        return lineError(
+                vecAngle(l1,l2),
+                convert::ros2mathLine(l1).b - convert::ros2mathLine(l2).b
+            );
     }
-    double lineError(Vector4d l1, Vector4d l2);
-    double lineError(mathLine2d l1, mathLine2d l2);
-    double lineError(mathLine2d line);
+    double lineError(Vector4d l1, Vector4d l2){
+        return lineError(convert::line2ros(l1),convert::line2ros(l2));
+    }
+    double lineError(mathLine2d l1, mathLine2d l2){
+        return lineError(
+            vecAngle(
+                    convert::mathLine2ros(l1),convert::mathLine2ros(l2),
+                    l1.b-l2.b
+                );
+        )
+    }
+    double lineError(double angle, double offset){
+        return (offset/5))*(1+int(offset/100))+angle*180/M_PI;
+    }
+    
     // ######################## DEBUG #####################################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color,std::string text,cv::Scalar textColor){
         int x_max = dst.rows;
