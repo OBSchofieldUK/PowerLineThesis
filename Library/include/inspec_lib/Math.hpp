@@ -25,7 +25,9 @@ namespace math{
     double lineError(Vector4d l1, Vector4d l2);
     double lineError(mathLine2d l1, mathLine2d l2);
     double lineError(double angle, double offset);
-
+    double distance(const cv::Point &p1, const cv::Point p2 = cv::Point(0,0));
+    double distance(const cv::Point &p, const mathLine2d &l);
+    double distance(const mathLine2d l, const cv::Point p);
     
     // ################ DEBUG #######################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color = cv::Scalar(255,255,255),std::string text = "",cv::Scalar textColor = cv::Scalar(255,255,255));

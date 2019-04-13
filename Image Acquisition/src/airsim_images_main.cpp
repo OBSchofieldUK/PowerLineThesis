@@ -18,7 +18,7 @@
 #include <inspec_msg/position.h>
 
 
-#define SLOWDOWN_FACTOR 2*30
+#define SLOWDOWN_FACTOR 1*30
 #define RECORD_FOLDER "/home/waarbubble/Dropbox/DroneMasters/PowerLinePhotos/AirSimFlightRecording2/"
 
 using namespace std;

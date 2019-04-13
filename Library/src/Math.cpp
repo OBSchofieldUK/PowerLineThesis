@@ -36,7 +36,6 @@ namespace math{
         double angle = dot/(length1*length2);
         return std::abs(std::acos(angle));
     }
-    
     double lineError(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
         return lineError(
                 vecAngle(l1,l2),
@@ -55,7 +54,19 @@ namespace math{
     double lineError(double angle, double offset){
         return (offset/5)*(1+int(offset/100))+angle*180/M_PI;
     }
-    
+    double distance(const cv::Point &p1, const cv::Point p2){
+        return std::sqrt(std::pow(p1.x-p2.x,2)+std::pow(p1.y-p2.y,2));
+    }
+    double distance(const cv::Point &p, const mathLine2d &l){
+        return distance(l,p);
+    }
+    double distance(const mathLine2d l, const cv::Point p){
+        double a = l.a;
+        double c = l.b;
+        double b = -1;
+
+        return std::abs(a*p.x+b*p.y+c)/std::sqrt(a*a+b*b);
+    }
     // ######################## DEBUG #####################################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color,std::string text,cv::Scalar textColor){
         int x_max = dst.rows;
