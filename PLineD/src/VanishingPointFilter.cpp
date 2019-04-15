@@ -10,10 +10,7 @@ namespace VP{
         buildClusterData(VPs,CP);
 
         Cand result;
-        //for(auto &x: CP[0]) std::cout << "err: " << x.error << std::endl;
-
         bool valid = findClusterCenter(CP,result,src.size(),max_point_cluster_error,min_point2line_error);
-        std::cout << "Valid: " << valid << std::endl;
         if(valid){
             for(uint i = 0; i < src.size(); i++){
                 if(distance(src[i],result.p.p)<result.error){

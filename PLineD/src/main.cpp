@@ -260,11 +260,9 @@ int main(int argc, char* argv[]){
         syncEstimateLines();
         // ############# Vannishing point Filter #####################
         cout << "Doing Vanishing point Filter" << endl;
-        vector<VP::VPoint> VPs;
+
         vector<mathLine> VPFiltered_lines;
         VP::filterLines(currentLines,VPFiltered_lines,50,300);
-        cout << "Lines Found: " << VPFiltered_lines.size() << endl;
-
         currentLines = VPFiltered_lines;
 
         // ################ Line Matching ########################
