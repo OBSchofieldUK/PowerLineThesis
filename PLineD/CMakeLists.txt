@@ -102,7 +102,12 @@ include_directories(
 # add_library(${PROJECT_NAME}
 # )
 
-add_executable(${PROJECT_NAME}_node src/main.cpp src/PLineD.cpp src/Matcher.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/main.cpp 
+  src/PLineD.cpp 
+  src/Matcher.cpp 
+  src/VanishingPointFilter.cpp
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node

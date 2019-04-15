@@ -18,6 +18,7 @@
 
 #include <inspec_lib/Math.hpp>
 #include "Matcher.hpp"
+#include "VanishingPointFilter.hpp"
 
 
 #define lineSeg std::vector< std::vector<cv::Point> >
@@ -259,75 +260,10 @@ int main(int argc, char* argv[]){
         syncEstimateLines();
         // ############# Vannishing point Filter #####################
         cout << "Doing Vanishing point Filter" << endl;
-        vector<VPoint> VPs;
-        for(uint i = 0; i < currentLines.size(); i++){
-            for(uint k = i+1; k < currentLines.size(); k++){
-                math::mathLine2d &l1 = currentLines[i];
-                math::mathLine2d &l2 = currentLines[k];
-                VPoint VP;
-                VP.ID1 = i;
-                VP.ID2 = k;
-                VP.p.x = (l2.b-l1.b)/(l1.a-l2.a);
-                VP.p.y = l1.a*VP.p.x+l1.b;
-                VPs.push_back(VP);
-            }
-        }
-
-        double sum;
-        uint s;
-
-        vector<vector<Cand>> CP(VPs.size());
-        for(uint i = 0; i < VPs.size(); i++){
-            for(uint k = i+1; k< VPs.size(); k++){
-                double d = math::distance(VPs[i].p,VPs[k].p);
-                //cout << "(" << i << ", " << k << ") d: " << d << endl;
-                CP[i].push_back({i,k,d});
-                CP[k].push_back({k,i,d});
-            }
-            std::sort(CP[i].begin(),CP[i].end(),candComp);
-            /*cout<< endl << "DONE: " << i << endl; 
-            for(auto &x: CP[i]) cout << "(" << x.ID1 << ", " << x.ID2 << ") e: " << x.error << endl;*/
-        }
-
-        cout << endl;
-        vector<double> avg(CP.size());
-        double min_avg = 500;
-        int index = -1;
-        for(uint i = 0; i < CP.size() ; i++){
-            avg[i] = 0;
-            if(CP[i][currentLines.size()].error < 300){
-                double max_e = CP[i][currentLines.size()].error*2;
-                double sum = 0;
-                uint k;
-                for(k=0; k < CP[i].size(); k++){
-                    sum+=CP[i][k].error;
-                    if(CP[i][k].error > max_e) break; 
-                }
-                CP[i].erase(CP[i].begin()+k,CP[i].end());
-                avg[i] = sum/k;
-                //cout << "CP: " << i << " - points: " << k << " - avg: " << avg[i] << endl;
-                if(avg[i] < min_avg){
-                    min_avg = avg[i];
-                    index = i;
-                } 
-            }
-        }
-        double max_error;
-        if(index != -1) {
-            cout << "Max error: " << CP[index].back().error << endl;
-            max_error = CP[index].back().error;
-            if(max_error < 50) max_error = 50;
-        }
+        vector<VP::VPoint> VPs;
         vector<mathLine> VPFiltered_lines;
-        for(uint i = 0; i < currentLines.size(); i++){
-            if(index != -1){
-                if(distance(currentLines[i],VPs[index].p)<max_error){
-                    VPFiltered_lines.push_back(currentLines[i]);
-                }
-            }else{
-                VPFiltered_lines.push_back(currentLines[i]);
-            }
-        }
+        VP::filterLines(currentLines,VPFiltered_lines,50,300);
+        cout << "Lines Found: " << VPFiltered_lines.size() << endl;
 
         currentLines = VPFiltered_lines;
 

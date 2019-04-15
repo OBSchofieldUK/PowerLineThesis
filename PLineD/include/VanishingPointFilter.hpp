@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <inspec_lib/Math.hpp>
+#include <iostream>
 
 namespace VP{
     struct VPoint{
@@ -12,8 +13,7 @@ namespace VP{
         cv::Point p;
     };
     struct Cand{
-        uint ID1;
-        uint ID2;
+        VPoint p;
         double error;
     };
     static struct candComparetor {
@@ -22,11 +22,10 @@ namespace VP{
         }
     } candComp;
 
-    void filterLines(std::vector<math::mathLine2d> src,std::vector<math::mathLine2d> dst,double min_point2line_error, double max_point_cluster_error);
+    void filterLines(std::vector<math::mathLine2d> src,std::vector<math::mathLine2d> &dst,double min_point2line_error, double max_point_cluster_error);
     VPoint calculateVanishingPoint(const math::mathLine2d &l1, const math::mathLine2d &l2);
     void calculateVanishingPoint(const std::vector<math::mathLine2d> &src,std::vector<VPoint> &dst);
-    void findBuildClusterData(const std::vector<VPoint> &src, std::vector<std::vector<Cand>> &dst);
-    void findClusterCenter(const std::vector<std::vector<Cand>> &src, Cand &dst);
-
+    void buildClusterData(const std::vector<VPoint> &src, std::vector<std::vector<Cand>> &dst);
+    bool findClusterCenter(std::vector<std::vector<Cand>> src, Cand &dst,uint error_check_index, double max_error = 300, double min_error = 50);
 }
 #endif
