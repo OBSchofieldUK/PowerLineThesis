@@ -17,6 +17,9 @@ from std_msgs.msg import String
 mavros.set_namespace('mavros')
 # mavros commands for 
 
+
+onB_StateSub = '/onboard/state'
+
 class droneCore():
     def __init__(self):
         rospy.init_node('droneCMD_node')
@@ -27,8 +30,9 @@ class droneCore():
         rospy.Subscriber(mavros.get_topic('state'), mavros_msgs.msg.State, self._cb_uavState)
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPos)
 
-        self.statePub = rospy.Publisher('/onboard/state', String, queue_size=1)
+        self.statePub = rospy.Publisher(onB_StateSub, String, queue_size=1)
         self.spLocalPub = mavSP.get_pub_position_local(queue_size=5)
+        
         # Services 
         self.setMode = rospy.ServiceProxy('/mavros/set_mode', mavros_msgs.srv.SetMode)
         
@@ -67,8 +71,8 @@ class droneCore():
         pass
 
     def _cb_localPos(self, msg):
-        # self.curPos = msg
-        self.curPos = self._genPoseMsg(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)        
+        self.curPos = msg
+        # self.curPos = self._genPoseMsg(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)        
         pass
 
 
@@ -76,7 +80,9 @@ class droneCore():
         if not self.droneArmed:
             mavCMD.arming(True)
 
-        preArmMsgs = self._genPoseMsg(0,0,alt)
+        preArmMsgs = self.curPos
+        preArmMsgs.pose.position.z = alt
+        # preArmMsgs = self._genPoseMsg(0,0,alt)
         for i in range(100):
             self._pubMsg(preArmMsgs, self.spLocalPub)
 
@@ -92,7 +98,7 @@ class droneCore():
         print('loiter enable')
         self.statePub.publish('loiter')
         self.loiterPos = self.curPos
-        self.loiter = True
+        # self.loiter = True
         
     
     def run(self):
@@ -101,10 +107,10 @@ class droneCore():
 
         while not rospy.is_shutdown():
 
-            if self.loiter:
-                self._pubMsg(self.loiterPos, self.spLocalPub)
-            else:
-                self._pubMsg(self.setPoint, self.spLocalPub)
+            # if self.loiter:
+            #     self._pubMsg(self.loiterPos, self.spLocalPub)
+            # else:
+            #     self._pubMsg(self.setPoint, self.spLocalPub)
             self.rate.sleep()
         pass
 
