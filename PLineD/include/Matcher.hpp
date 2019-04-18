@@ -31,7 +31,7 @@ namespace Matcher{
 
     // ######### ALGORITHMS ###########
     void matchingAlgorithm(std::vector<inspec_msg::line2d> &result, const std::vector<math::mathLine2d> &slots, const std::vector<inspec_msg::line2d> &sockets);
-    std::pair<std::vector<candidate>,double> match_loop(std::vector<std::vector<candidate>> &candList,int i,std::vector<bool> not_available,double solution_cost,std::vector<candidate> Solution, double &Max_solution_cost);
+    std::pair<std::vector<candidate>,double> match_loop(std::vector<std::vector<candidate> > &candList,int i,std::vector<bool> not_available,double solution_cost,std::vector<candidate> Solution, double &Max_solution_cost);
     
     // ########## Other ###############
     std::ostream& operator<<(std::ostream& os, const candidate& dt);

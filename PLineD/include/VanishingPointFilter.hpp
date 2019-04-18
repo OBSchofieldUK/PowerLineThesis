@@ -26,6 +26,6 @@ namespace VP{
     VPoint calculateVanishingPoint(const math::mathLine2d &l1, const math::mathLine2d &l2);
     void calculateVanishingPoint(const std::vector<math::mathLine2d> &src,std::vector<VPoint> &dst);
     void buildClusterData(const std::vector<VPoint> &src, std::vector<std::vector<Cand>> &dst);
-    bool findClusterCenter(std::vector<std::vector<Cand>> src, Cand &dst,uint error_check_index, double max_error = 300, double min_error = 50);
+    bool findClusterCenter(std::vector<std::vector<Cand> > src, Cand &dst,uint error_check_index, double max_error = 300, double min_error = 50);
 }
 #endif
