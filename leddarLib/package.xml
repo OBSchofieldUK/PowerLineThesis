@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <name>leddar_lib</name>
+  <version>0.0.0</version>
+  <description>The LeddarLib</description>
+  <maintainer email="kalor14@student.sdu.dk">Kasper Hoej lorenzen</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+
+  <run_depend>roscpp</run_depend>
+
+  <export>
+
+  </export>
+</package>
