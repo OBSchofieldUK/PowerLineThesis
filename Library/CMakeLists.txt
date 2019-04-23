@@ -45,6 +45,7 @@ include_directories(include
 add_library(${PROJECT_NAME}
   src/Math.cpp
   src/RosConverters.cpp
+  src/CoordinateConverters.cpp
 )
 
 ## Specify libraries to link a library or executable target against

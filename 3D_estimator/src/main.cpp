@@ -21,6 +21,7 @@
 
 #include <inspec_lib/Math.hpp>
 #include <inspec_lib/RosConverters.hpp>
+#include <inspec_lib/CoordinateConverters.hpp>
 
 #define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1ul
 #define MAX_ERROR_FOR_EST_MATCHING 1.5f

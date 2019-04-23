@@ -1,7 +1,18 @@
 #include "../include/inspec_lib/Math.hpp"
 
 namespace math{
-
+    mathLine2d constructMathLine(cv::Point2f p, double angle, cv::Mat *img){
+        mathLine2d line;
+        line.a=atan(angle);
+        line.b=p.y-p.x*line.a;
+        if(img!= NULL){
+            
+            double y = line.a*img->cols/2+line.b;
+            line.a *= -1;
+            line.b = -(y-img->rows/2);
+        }
+        return line;
+    }
     // ####################### CONVERTERS ################################
     
     double rad2deg(const double &angle){

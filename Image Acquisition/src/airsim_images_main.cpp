@@ -18,7 +18,7 @@
 #include <inspec_msg/position.h>
 
 
-#define SLOWDOWN_FACTOR 1*30
+#define SLOWDOWN_FACTOR 15
 #define RECORD_FOLDER "/home/waarbubble/Dropbox/DroneMasters/PowerLinePhotos/AirSimFlightRecording2/"
 
 using namespace std;
@@ -107,7 +107,7 @@ int main(int argc, char **argv){
         cout << "Unable to open file at: " << string(RECORD_FOLDER)+"airsim_rec.txt"  << endl;
         exit(1);
     }
-
+    bool first = true;
 
     //Create Image Windows
     //ImageWindow("Original",50,50);
@@ -128,7 +128,13 @@ int main(int argc, char **argv){
         publishImageToRos(img);
         publishPositionToRos(data);
         ros::spinOnce();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000*SLOWDOWN_FACTOR/30));
+        if(first){
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            first = false;
+        }else{
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000*SLOWDOWN_FACTOR/30));
+        }
+        
         
     }
     return 0;

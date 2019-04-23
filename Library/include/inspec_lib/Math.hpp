@@ -12,6 +12,8 @@
 
 
 namespace math{
+    // ############### Constructers #################
+    mathLine2d constructMathLine(cv::Point2f p, double angle,cv::Mat *img = NULL);
 
     // ############### CONVERTERS ###################
     
