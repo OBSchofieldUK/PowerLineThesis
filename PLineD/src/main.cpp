@@ -17,8 +17,10 @@
 #include <inspec_msg/line2d_array.h>
 
 #include <inspec_lib/Math.hpp>
+
 #include "Matcher.hpp"
 #include "VanishingPointFilter.hpp"
+#include "ProximityFiltering.hpp"
 
 
 #define lineSeg std::vector< std::vector<cv::Point> >
@@ -38,29 +40,19 @@
 #define LINE_PARALLEL_MAX_ANGLE 5.0f            //Angle in deg
 
 #define MATCHER_LINE_MAX_ERROR 30
-#define MATCHER_NO_MATCH_COST MATCHER_LINE_MAX_ERROR
+#define MATCHER_NO_MATCH_COST 30
 
 #define SHOW_IMAGE_ORIGINAL true
 #define SHOW_IMAGE_FINAL true
 
-#define DEBUG_PLINED true
+#define DEBUG_PLINED false
+#define DEBUG_PROXIMITY_FILTER_ true
 #define DEBUG_SINGLE_IMG false
 #define DEBUG true
 
 using namespace std;
 
 typedef math::mathLine2d mathLine;
-
-struct VPoint{
-    uint ID1;
-    uint ID2;
-    cv::Point p;
-};
-struct Cand{
-    uint ID1;
-    uint ID2;
-    double error;
-};
 
 struct lineComparetor {
     bool operator() (vector<cv::Point> i,vector<cv::Point> j) { 
@@ -154,7 +146,7 @@ lineSeg PLineD_full(cv::Mat &src){
         cv::imshow("Conturs",out1);
         cv::imshow("SegCut",out2);
         cv::imshow("CovFil",out3);
-        //cv::imshow("GroupSeg",out4);
+        cv::imshow("GroupSeg",out4);
         if(LINE_PARALLEL_ACTIVE) cv::imshow("ParLines",out5);
         cv::waitKey(1);
     }
@@ -348,8 +340,13 @@ int main(int argc, char* argv[]){
         if(LINE_PARALLEL_ACTIVE) ShowImage("ParLines",BLACK,1210,610);
         ShowImage("PLineD",BLACK,1210,610);
     }else{
+
         if(SHOW_IMAGE_ORIGINAL) ShowImage("TestImage",BLACK);
-        ShowImage("PLineD",BLACK,50,600);
+        if(SHOW_IMAGE_FINAL) ShowImage("PLineD",BLACK,50,600);
+
+    }
+    if(DEBUG_PROXIMITY_FILTER_){
+        ShowImage("Proximity",BLACK,610,610);
     }
 
     
@@ -357,6 +354,7 @@ int main(int argc, char* argv[]){
     // ############## Initialize Variables #############
     Matcher::LINE_MAX_ERROR = MATCHER_LINE_MAX_ERROR;
     Matcher::NO_MATCH_COST = MATCHER_NO_MATCH_COST;
+    Prox::DEBUG_PROXIMITY_FILTER = DEBUG_PROXIMITY_FILTER_;
     int loop_num = -1;
     while(ros::ok()){
 
@@ -367,186 +365,78 @@ int main(int argc, char* argv[]){
         }
         loop_num++;
         // ############# Pline D #####################################
-        std::cout << endl << endl << "###########################################" << endl;
-        cout << "Start Work Flow Image: " << img_num << endl;
+        if(DEBUG) {
+            std::cout << endl << endl << "###########################################" << endl;
+            cout << "Start Work Flow Image: " << img_num << endl;
+        }
 
         lineSeg lines = PLineD_full(img);
-        cout << "PlineD Done found " << lines.size() << " Lines" << endl;
+        if(DEBUG) cout << "PlineD Done found " << lines.size() << " Lines" << endl;
        
-        //##############
-        cv::Mat out1(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
-        vector<cv::RotatedRect> BBox(lines.size());
-        sort(lines.begin(),lines.end(),lineComp);
-        for( size_t i = 0; i < lines.size(); i++ ){ 
-            BBox[i] = cv::minAreaRect( cv::Mat(lines[i]) );
-            correctBBox(BBox[i]);
-            cv::putText(out1, "Line " + to_string(i),BBox[i].center,cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(0,255,255),2);
-            mathLine l1 = math::constructMathLine(BBox[i].center,math::deg2rad(BBox[i].angle), &out1);
-            math::drawMathLine(out1,l1,cv::Scalar(0,0,255));
+        //############## Proximity Filtering ############################
+        if(DEBUG_PROXIMITY_FILTER_){
+            cv::Mat out1(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
+            Prox::filter(lines,out1);
+            cv::imshow("Proximity",out1);
+        }else{
+            Prox::filter(lines);
         }
-        
-        PLineD::printContours(out1,lines);
-        vector<uint> remove;
-        vector<pair<uint,uint> > gather;
-        vector<bool> dontConsider(BBox.size());
-        for(uint i = 0; i < BBox.size(); i++){
-            if(!dontConsider[i]){
-                cv::Point2f p1r = findBoxEnd(BBox[i],RIGHT);
-                cv::Point2f p1l = findBoxEnd(BBox[i],LEFT);
-                mathLine l1 = math::constructMathLine(BBox[i].center,math::deg2rad(BBox[i].angle));
-                for(uint k = i+1; k < BBox.size(); k++){
-                    if(!dontConsider[i]){
-                        double angleDif = abs(BBox[i].angle-BBox[k].angle);
-                        if(angleDif< 7.0){
-                            double dlp = math::distance(l1,BBox[k].center);
-                            double dlp2 = math::distance(math::constructMathLine(BBox[k].center,math::deg2rad(BBox[k].angle)),BBox[i].center);
-                            if(dlp2<dlp) dlp = dlp2;
-                            cout << "Lines(" << i << ", " << k << ") D: " << dlp << " A: " <<angleDif<<  endl;
-                            if(dlp< 50){
-                                cv::Point2f p2l = findBoxEnd(BBox[k],LEFT);
-                                cv::Point2f p2r = findBoxEnd(BBox[k],RIGHT);
-                                dlp = math::distance(l1,p2l)+math::distance(l1,p2r);
-                                cout << "   DLP: " << dlp << endl;
-
-                                bool toTheLeft=false;
-                                bool toTheRight=false;
-
-                                if(p1r.x < p2l.x){
-                                    toTheRight = true;
-                                    cout << "     To the Right" << endl;
-                                }else if(p1l.x > p2r.x){
-                                    toTheLeft = true;
-                                    cout << "     To the Left" << endl;
-                                }
-                                
-                                if(toTheLeft || toTheRight){ // EXtension
-                                    cout << " ### EXTENSION ###" << endl;
-                                    if((toTheLeft && math::distance(l1,p2r) < 10 ) || (toTheRight && math::distance(l1,p2l)<10)){
-                                        if(angleDif>4){ // Curved Extension
-                                            if(lines[i].size()> lines[k].size()){
-                                                cout << "     Remove: " << k << endl;
-                                                remove.push_back(k);
-                                                dontConsider[k]=true;
-                                            }else{
-                                                remove.push_back(i);
-                                                dontConsider[k]=true;
-                                                cout << "     Remove: " << i << endl;
-                                            }
-                                        }else{ // straight Extension
-                                            if(lines[i].size()> lines[k].size()){
-                                                dontConsider[k];
-                                                gather.push_back(pair<uint,uint>(i,k));
-                                                cout << "     combine: " << i << ", " << k << endl;
-                                            }else{
-                                                dontConsider[i];
-                                                gather.push_back(pair<uint,uint>(k,i));
-                                                cout << "     combine: " << k << ", " << i << endl;
-                                            } 
-                                        }
-                                    }else{
-                                        cout << "No Extension" << endl;
-                                    }   
-                                }else if(dlp<14 && angleDif < 4){ //adition
-                                    cout << " ### Addition ###" << endl;
-                                    if(lines[i].size()> lines[k].size()){
-                                        dontConsider[k];
-                                        gather.push_back(pair<uint,uint>(i,k));
-                                        cout << "     combine: " << i << ", " << k << endl;
-                                    }else{
-                                        dontConsider[i];
-                                        gather.push_back(pair<uint,uint>(k,i));
-                                        cout << "     combine: " << k << ", " << i << endl;
-                                    } 
-                                }
-                            } 
-                        }
-                    }
-                    cv::circle(out1,p1r,12,cv::Scalar(255,255,0),3);
-                    cv::circle(out1,p1l,12,cv::Scalar(255,0,255),3);
-                }
-            }
-        }
-        for(auto i: remove){
-            bool doRemove = true;
-            for(auto k: gather){
-                if(k.first == i || k.second == i){
-                    doRemove = false;
-                    break;
-                } 
-            }
-            if(doRemove){
-                lines[i].clear();
-            } 
-        }
-        for(auto &x: gather){
-            lines[x.first].insert(lines[x.first].end(),lines[x.second].begin(),lines[x.second].end());
-            lines[x.second].clear();
-        }
-
-        sort(lines.begin(),lines.end(),lineComp);
-        for(uint i = lines.size()-1; i < lines.size(); i--){
-            if(lines[i].empty()){
-                lines.erase(lines.begin()+i);
-            }
-
-        }
-
-        cv::imshow("GroupSeg",out1);
-        cv::waitKey(1);
+        //cv::waitKey(1);
         // ############### Ready Data for Matching #######################
         for(uint i = 0; i < lines.size(); i++){
             currentLines.push_back(math::leastSquareRegression(lines[i],img.size()));
         }
         syncEstimateLines();
         // ############# Vannishing point Filter #####################
-        cout << "Doing Vanishing point Filter" << endl;
+        if(DEBUG) cout << "Doing Vanishing point Filter" << endl;
 
         vector<mathLine> VPFiltered_lines;
         VP::filterLines(currentLines,VPFiltered_lines,50,300);
         currentLines = VPFiltered_lines;
 
         // ################ Line Matching ########################
-        cout << "Line Mathcher" << endl;
+        if(DEBUG) cout << "Line Mathcher" << endl;
         
         vector<inspec_msg::line2d> matched_lines; 
         Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
         
         // ################ Finalize #############################
-        cout << "Published Lines To Ros" << endl << endl;
+        if(DEBUG) cout << "Published Lines To Ros" << endl << endl;
         PublishLinesToRos(matched_lines);
         gotImage = false;
         //################# DEBUG ################################
+        if(SHOW_IMAGE_FINAL){
 
+            cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
 
-        cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
+            if(DEBUG) cout << "Drawing Found Lines: " << loop_num << endl;
+            //PLineD::printContours(out, lines);
 
-        cout << "Drawing Found Lines: " << loop_num << endl;
-        //PLineD::printContours(out, lines);
-
-        map<uint,bool> drawn;
-        for(uint i = 0; i < matched_lines.size(); i++){
-            if(matched_lines[i].id != 0){
-                drawn[matched_lines[i].id] = true;
-                math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
-            }else{
-                math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
-
-            }
-            
-        }
-        cout << "Drawing EST Lines" << endl;
-        if(!lineEstimates.empty()){
-            for(inspec_msg::line2d line: lineEstimates.front().lines){
-                if(!drawn[uint(line.id)]){
-                    math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
+            map<uint,bool> drawn;
+            for(uint i = 0; i < matched_lines.size(); i++){
+                if(matched_lines[i].id != 0){
+                    drawn[matched_lines[i].id] = true;
+                    math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
                 }else{
-                    math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                    math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
+
+                }
+                
+            }
+            if(DEBUG) cout << "Drawing EST Lines" << endl;
+            if(!lineEstimates.empty()){
+                for(inspec_msg::line2d line: lineEstimates.front().lines){
+                    if(!drawn[uint(line.id)]){
+                        math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
+                    }else{
+                        math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                    }
                 }
             }
-        }
-        imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
+            imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
 
-        cv::imshow("PLineD",out);
+            cv::imshow("PLineD",out);
+        }
         if(!DEBUG_SINGLE_IMG){ 
             cv::waitKey(1);
         }else{
