@@ -24,15 +24,16 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
-  roscpp
-  std_msgs
-  inspec_msg
+    roscpp
+    std_msgs
+    inspec_msg
   DEPENDS ROBWORK
 )
 
 ###########
 ## Build ##
 ###########
+
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -47,6 +48,7 @@ add_library(${PROJECT_NAME}
   src/RosConverters.cpp
   src/CoordinateConverters.cpp
 )
+add_dependencies(${PROJECT_NAME} inspec_msg_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}

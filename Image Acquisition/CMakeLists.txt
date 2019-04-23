@@ -112,7 +112,6 @@ catkin_package(
   roscpp
   sensor_msgs
   std_msgs
-  DEPENDS ROBWORK
 )
 
 ###########
