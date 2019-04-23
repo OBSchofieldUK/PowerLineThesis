@@ -12,7 +12,7 @@ The Robwork Libary is also Nessesary to run the system. No need to install all t
 
 To run the Project open cv is also nessesary. Currently it is tested with Opencv 3.3.1.
 
-The Project also depends on ROS. The implementation is tested to work on ros-kinetic, but can also run on ros-melodic if the inspec_msg package is compiled before compiling the rest of the project
+The Project also depends on ROS. The implementation is tested to work on ros-kinetic, and ros-melodic.
 
 # Starting the Project
 
