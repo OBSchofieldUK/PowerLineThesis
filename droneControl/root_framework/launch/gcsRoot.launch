@@ -1,0 +1,7 @@
+<!-- launch file -->
+
+<launch>
+ 	<!-- <node pkg="root_framework" type="keypressNode.py" name="gcs_keypress" output="screen"></node> -->
+ 	<node pkg="root_framework" type="droneCore.py" name="droneCore" output="screen"></node>
+  <node pkg="root_framework" type="loiterPilot.py" name="loiterPilot" output="screen"></node>
+</launch>
