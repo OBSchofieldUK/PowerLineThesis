@@ -23,8 +23,8 @@ namespace convert{
     boost::array<double, 4ul> Quaternion2ros(rw::math::Rotation3D<double> vec);
     boost::array<double, 4ul> Quaternion2ros(rw::math::EAA<double> vec);
 
-    inspec_msg::line2d line2ros(const math::Vector4d &line);
-    inspec_msg::line3d line2ros(const math::Vector7d &line);
+    inspec_msg::line2d line2ros(const math::Vector4d &line, uint id = 0);
+    inspec_msg::line3d line2ros(const math::Vector7d &line, uint id = 0);
     math::Vector4d ros2line(const inspec_msg::line2d line);
     math::mathLine2d line2mathLine(const math::Vector4d line);
 

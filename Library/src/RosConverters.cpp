@@ -62,18 +62,20 @@ namespace convert{
         A.lines = lines;
         return A;
     }
-    inspec_msg::line2d line2ros(const math::Vector4d &line){
+    inspec_msg::line2d line2ros(const math::Vector4d &line,uint id){
         inspec_msg::line2d ret;
         ret.x0 = line(0);
         ret.y0 = line(1);
         ret.dx = line(2);
         ret.dy = line(3);
+        ret.id = id;
         return ret;
     }
-    inspec_msg::line3d line2ros(const math::Vector7d &line){
+    inspec_msg::line3d line2ros(const math::Vector7d &line, uint id){
         inspec_msg::line3d ret;
         ret.pos = {line(0), line(1), line(2)};
         ret.dir = {line(4), line(5), line(6)};
+        ret.id = id;
         return ret;
     }
     math::Vector4d ros2line(const inspec_msg::line2d line){

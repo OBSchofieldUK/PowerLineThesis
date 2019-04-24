@@ -23,8 +23,11 @@
 #include <inspec_lib/RosConverters.hpp>
 #include <inspec_lib/CoordinateConverters.hpp>
 
-#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 1ul
+#define MAX_UNOBSERVED_STATES_BEFORE_DELETION 4ul
+#define MIN_OBSERVATION_TOO_BEE_TRUSTED 4ul
+#define MAX_UNOBSERVED_STATES_BEFORE_DELETION_UNTRUSTED_LINE 1ul
 #define MAX_ERROR_FOR_EST_MATCHING 1.5f
+
 #define X0 0
 #define Y0 1
 #define Z0 2
@@ -66,6 +69,7 @@ struct lineEstimate{
     long id;
     size_t lastObserved;
     size_t consecutiveObservations;
+    size_t observations;
 };
 
 // #### ROS Variables #####
@@ -291,7 +295,9 @@ inspec_msg::line2d line2ros2D(lineEstimate line){
     ret.id = line.id;
     return ret;
 }
-
+inspec_msg::line3d line2ros3D(lineEstimate line){
+    return convert::line2ros(line.X_hat,line.id);
+}
 //############################ OTHER  ################################################
 void addNewLine(inspec_msg::line2d line2d){
     lineEstimate newLine;
@@ -321,19 +327,13 @@ void updateLineEstimate(lineEstimate &line, const Matrix7 &F){
     line.line2d = line3dTo2d(line.X_hat,currentCam);
 
 }
-void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data,int max_it =10){
-    /*  Rx = diag(sigma_r)*(Hx*Hx')*diag(sigma_r)'
-        S = Hx*Px*Hx'+Rx;
-        K = (Px*Hx')/S;
-        Px = Px-K*Hx*Px;
-        Xx_hat =  Xx_hat + K*(z(1)-Hx*Xx_hat);*/
-    
-    
+void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data,int max_it =10){ 
     if(image_seq - theLine.lastObserved == 1){
         theLine.consecutiveObservations++;
     }else{
         theLine.consecutiveObservations = 1;
     }
+    theLine.observations++;
     theLine.lastObserved = image_seq;
     theLine.last_correct = correction_data;
 
@@ -385,21 +385,30 @@ void position_handler(inspec_msg::position msg){
                                 convert::FRU2Image3D(convert::ros2Quaternion(msg.Orientation_quat)));
 
         inspec_msg::line2d_array return_msg;
+        inspec_msg::line3d_array result_msg;
         vector<lineEstimate> toRemove;
 
         for (pair<const long int,lineEstimate> &x : ActiveLines){
-            if(position_seq-x.second.lastObserved > MAX_UNOBSERVED_STATES_BEFORE_DELETION){
+            if( position_seq-x.second.lastObserved > MAX_UNOBSERVED_STATES_BEFORE_DELETION ||
+                (position_seq-x.second.lastObserved > MAX_UNOBSERVED_STATES_BEFORE_DELETION_UNTRUSTED_LINE
+                 && x.second.observations < MIN_OBSERVATION_TOO_BEE_TRUSTED))
+            {
                 toRemove.push_back(x.second);
             }else{
                 updateLineEstimate(x.second,F);
                 return_msg.lines.push_back(line2ros2D(x.second));
+                result_msg.lines.push_back(line2ros3D(x.second));
+
             }      
         }
         for(uint i = 0; i < toRemove.size(); i++) removeLine(toRemove[i]);
         
         return_msg.header =msg.header;
         return_msg.header.stamp = ros::Time::now();
+        result_msg.header = return_msg.header;
+
         line2Dest_pub.publish(return_msg);
+        line_pub.publish(return_msg);
     }
 }
 

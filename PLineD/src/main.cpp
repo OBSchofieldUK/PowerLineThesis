@@ -42,11 +42,11 @@
 #define MATCHER_LINE_MAX_ERROR 30
 #define MATCHER_NO_MATCH_COST 30
 
-#define SHOW_IMAGE_ORIGINAL true
+#define SHOW_IMAGE_ORIGINAL false
 #define SHOW_IMAGE_FINAL true
 
 #define DEBUG_PLINED false
-#define DEBUG_PROXIMITY_FILTER_ true
+#define DEBUG_PROXIMITY_FILTER_ false
 #define DEBUG_SINGLE_IMG false
 #define DEBUG true
 
@@ -82,7 +82,6 @@ void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::resizeWindow(name, 600,500);
     cv::imshow(name, img);
 }
-
 
 // ############### PLineD #################################
 lineSeg PLineD_full(cv::Mat &src){
@@ -231,94 +230,6 @@ void syncEstimateLines(){
     }
     cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
 }
-
-const uint RIGHT = 1, LEFT = 2, UP = 3, DOWN = 4;
-void findSide(cv::Point2f src[4], cv::Point2f dst[2], uint side){
-    int sign = 1;
-    if(side == LEFT || side == UP) sign = -1;
-    if(side == RIGHT || side == LEFT){
-        if(sign*src[0].x < sign*src[1].x){
-            dst[0] = src[0];
-            dst[1] = src[1];
-        }else{
-            dst[0] = src[1];
-            dst[1] = src[0];
-        }
-        for(uint i = 2; i < 4;i++){
-            if(sign*src[i].x > sign*dst[1].x){
-                dst[0] = dst[1];
-                dst[1] = src[i];
-            }else if(sign*src[i].x > sign*dst[0].x){
-                dst[0] = src[i];
-            }
-        }
-    }else if(side == UP || side == DOWN){
-        if(sign*src[0].y < sign*src[1].y){
-            dst[0] = src[0];
-            dst[1] = src[1];
-        }else{
-            dst[0] = src[1];
-            dst[1] = src[0];
-        }
-        for(uint i = 2; i < 4;i++){
-            if(sign*src[i].y > sign*dst[1].y){
-                dst[0] = dst[1];
-                dst[1] = src[i];
-            }else if(sign*src[i].y > sign*dst[0].y){
-                dst[0] = src[i];
-            }
-        }
-    }  
-}
-void correctBBox(cv::RotatedRect &BBox){
-    if(BBox.size.width < BBox.size.height){
-        double holder = BBox.size.width;
-        BBox.size.width = BBox.size.height;
-        BBox.size.height = holder;
-        BBox.angle += 90;
-        if(BBox.angle> 180) BBox.angle -=360;
-    }
-}
-
-void findSide(cv::Point2f src[2], cv::Point2f &dst,uint side){
-    int sign = 1;
-    if(side == LEFT || side == UP) sign = -1;
-    if(side == RIGHT || side == LEFT){
-        if(sign*src[1].x > sign*src[0].x){
-            dst =src[1];
-        }else{
-            dst = src[0];
-        }
-    }else if(side == UP || side == DOWN){
-        if(sign*src[1].y > sign*src[0].y){
-            dst =src[1];
-        }else{
-            dst = src[0];
-        }
-    }
-}
-
-cv::Point findBoxEnd(cv::RotatedRect BBox,uint side){
-    int sign;
-    if(side == RIGHT) sign = 1;
-    else if (side == LEFT) sign = -1;
-    else throw "NOT a valid side";
-
-    double length,angle;
-    if(BBox.size.width > BBox.size.height){ 
-        angle = math::deg2rad(BBox.angle);
-        length = BBox.size.width/2;
-    }else{
-        angle = math::deg2rad(BBox.angle +90);
-        length = BBox.size.height/2;
-    }
-    cv::Point rightSide = BBox.center;
-    rightSide.x += sign*length*cos(angle);
-    rightSide.y += sign*length*sin(angle);
-    return rightSide;
-}
-
-
 
 //################ MAIN ##################################
 int main(int argc, char* argv[]){
