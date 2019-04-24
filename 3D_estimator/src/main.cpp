@@ -298,7 +298,7 @@ inspec_msg::line2d line2ros2D(lineEstimate line){
 inspec_msg::line3d line2ros3D(lineEstimate line){
     return convert::line2ros(line.X_hat,line.id);
 }
-//############################ OTHER  ################################################
+//############################ Running the kalmanFilter  ################################################
 void addNewLine(inspec_msg::line2d line2d){
     lineEstimate newLine;
 
@@ -327,7 +327,7 @@ void updateLineEstimate(lineEstimate &line, const Matrix7 &F){
     line.line2d = line3dTo2d(line.X_hat,currentCam);
 
 }
-void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data,int max_it =10){ 
+void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data){ 
     if(image_seq - theLine.lastObserved == 1){
         theLine.consecutiveObservations++;
     }else{
@@ -363,15 +363,19 @@ void line_handler(inspec_msg::line2d_array msg){
     std::cout << "Image Data Recived: " << long(msg.header.seq) << endl;
     if(msg.header.seq > image_seq && msg.header.seq == position_seq){
         image_seq = msg.header.seq;
-
+        inspec_msg::line3d_array return_msg;
         for(uint i = 0; i < msg.lines.size(); i++){
             try{
                 lineEstimate &line = ActiveLines.at(size_t(msg.lines[i].id));
                 correctLineEstimate(line,msg.lines[i]);
+                if(line.trust_estimate){
+                    return_msg.lines.push_back(line2ros3D(line));
+                }
             }catch(const std::out_of_range& oor) {
                 addNewLine(msg.lines[i]);
             }  
         }
+        line_pub.publish(return_msg);
     }
 }
 void position_handler(inspec_msg::position msg){
@@ -385,7 +389,6 @@ void position_handler(inspec_msg::position msg){
                                 convert::FRU2Image3D(convert::ros2Quaternion(msg.Orientation_quat)));
 
         inspec_msg::line2d_array return_msg;
-        inspec_msg::line3d_array result_msg;
         vector<lineEstimate> toRemove;
 
         for (pair<const long int,lineEstimate> &x : ActiveLines){
@@ -397,7 +400,6 @@ void position_handler(inspec_msg::position msg){
             }else{
                 updateLineEstimate(x.second,F);
                 return_msg.lines.push_back(line2ros2D(x.second));
-                result_msg.lines.push_back(line2ros3D(x.second));
 
             }      
         }
@@ -405,10 +407,8 @@ void position_handler(inspec_msg::position msg){
         
         return_msg.header =msg.header;
         return_msg.header.stamp = ros::Time::now();
-        result_msg.header = return_msg.header;
 
         line2Dest_pub.publish(return_msg);
-        line_pub.publish(return_msg);
     }
 }
 

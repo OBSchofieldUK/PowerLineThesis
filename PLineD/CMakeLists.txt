@@ -113,6 +113,7 @@ add_executable(${PROJECT_NAME}_node
   src/Matcher.cpp 
   src/VanishingPointFilter.cpp
   src/ProximityFiltering.cpp
+  src/ThicknessEstimator.cpp
 )
 
 ## Specify libraries to link a library or executable target against
