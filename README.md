@@ -24,7 +24,17 @@ roslaunch plined prog.launch
 roslaunch estimator3d prog.launch
 roslaunch drone_motion prog.launch
 ```
+# Rostopics
+The Rostopics used in the project 
 
+```bash
+/DroneInfo/Position             #Sends the Position of the drone global
+/DroneInfo/Relative/Position    #Sends the Relative Motion of the Drone camera since last image
+/Estimator/lines2d              #Sends the Predicted position of the powerline in next image
+/Estimator/lines3d              #Sends the result of the 3d estimation of powerlines for good estimates
+/linedetector/lines2d           #Sends the 2d lines detected from the Image (Must be matached with id from estimater)
+/webcam/image_raw               #Sends the Image
+```
 
 # Copyright
 
