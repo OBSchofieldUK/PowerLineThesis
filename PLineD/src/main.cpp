@@ -21,6 +21,7 @@
 #include "Matcher.hpp"
 #include "VanishingPointFilter.hpp"
 #include "ProximityFiltering.hpp"
+#include "ThicknessEstimator.hpp"
 
 
 #define lineSeg std::vector< std::vector<cv::Point> >
@@ -47,7 +48,7 @@
 
 #define DEBUG_PLINED false
 #define DEBUG_PROXIMITY_FILTER_ false
-#define DEBUG_SINGLE_IMG false
+#define DEBUG_SINGLE_IMG true
 #define DEBUG true
 
 using namespace std;
@@ -298,6 +299,15 @@ int main(int argc, char* argv[]){
             currentLines.push_back(math::leastSquareRegression(lines[i],img.size()));
         }
         syncEstimateLines();
+        // ############# Thickness Est ###############################
+        ThickEst::vvi pLines;
+        ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
+        //ThickEst::print(pLines);
+        ThickEst::vp lineThick;
+        ThickEst::findThickness(pLines,lineThick);
+        mathLine Thickness = math::leastSquareRegression(lineThick,img.size(),false);
+        cout << Thickness << endl;
+        //ThickEst::print(pLines);
         // ############# Vannishing point Filter #####################
         if(DEBUG) cout << "Doing Vanishing point Filter" << endl;
 

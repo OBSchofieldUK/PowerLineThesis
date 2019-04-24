@@ -22,12 +22,18 @@ namespace math{
         return angle*M_PI/180;
     }
     // ######################## ALGORITHMS ###############################
-    mathLine2d leastSquareRegression(std::vector<cv::Point> aLine, const cv::Size &imgSize){ // Should be const ref
+    mathLine2d leastSquareRegression(std::vector<cv::Point> aLine, const cv::Size &imgSize, bool move00toImgCenter){ // Should be const ref
         int N = aLine.size();
         double y_sum, x_sum, xy_sum, xx_sum;
         for(int i = 0; i < N; i++){
-            const double x = aLine[i].x-imgSize.width/2;
-            const double y = -(aLine[i].y-imgSize.height/2);
+            double x,y;
+            if(move00toImgCenter){
+                x = aLine[i].x-imgSize.width/2;
+                y = -(aLine[i].y-imgSize.height/2);    
+            }else{
+                x = aLine[i].x;
+                y = aLine[i].y;
+            }
 
             y_sum += y;
             x_sum += x;

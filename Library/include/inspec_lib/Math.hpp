@@ -21,7 +21,7 @@ namespace math{
     double deg2rad(const double &angle);
 
     // ################ ALGORITHMS ##################
-    mathLine2d leastSquareRegression(std::vector<cv::Point> aLine ,const cv::Size &imgSize = cv::Size(1920,1080));
+    mathLine2d leastSquareRegression(std::vector<cv::Point> aLine ,const cv::Size &imgSize = cv::Size(1920,1080), bool move00toImgCenter = true);
     double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2);
     double lineError(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2);
     double lineError(Vector4d l1, Vector4d l2);
