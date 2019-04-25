@@ -4,8 +4,14 @@ namespace ThickEst{
     void findParallelPixels(const vp &src,const math::mathLine2d &line, vvi &dst, const cv::Size &imgSize ){
         dst = vvi(imgSize.width);
         int first=imgSize.width,last=0;
-        for(auto point: src){
+        for(auto p: src){
+            cv::Point2f point; 
+            double angle = std::atan(line.a);
+            point.x = std::cos(angle)*p.x - sin(angle)*p.y;
+            point.y = std::sin(angle)*p.x + cos(angle)*p.y;
+            std::cout << point << p << std::endl; 
             bool notThere = true;
+            
             for(uint i = 0; i < dst[point.x].size(); i++){
                 if(dst[point.x][i] == point.y){
                     notThere = false;
@@ -21,11 +27,11 @@ namespace ThickEst{
             }
         }
 
-        if(first > 1) dst.erase(dst.begin(),dst.begin()+first-1);
+        /*if(first > 1) dst.erase(dst.begin(),dst.begin()+first-1);
         else if(first == 1) dst.erase(dst.begin());
 
         if(last < dst.size()-1)dst.erase(dst.begin()+last+1,dst.end());
-        else if(last == dst.size()-1) dst.erase(dst.end());
+        else if(last == dst.size()-1) dst.erase(dst.end());*/
 
         dst.push_front({int(first-1)});
         //std::cout << "First: " << first << std::endl;

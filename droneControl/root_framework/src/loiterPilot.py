@@ -15,7 +15,7 @@ mavros.set_namespace('mavros')
 
 onB_StateSub = '/onboard/state'
 
-class loiterPilot():
+class loiterPilot(): 
     def __init__(self):
         rospy.init_node('loiterPilot')
         self.rate = rospy.Rate(20)

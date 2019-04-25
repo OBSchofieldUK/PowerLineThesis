@@ -358,6 +358,7 @@ int main(int argc, char* argv[]){
 
             cv::imshow("PLineD",out);
         }
+        return 0;
         if(!DEBUG_SINGLE_IMG){ 
             cv::waitKey(1);
         }else{

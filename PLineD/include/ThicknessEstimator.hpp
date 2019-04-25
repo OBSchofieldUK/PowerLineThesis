@@ -11,6 +11,8 @@
 #include <inspec_lib/Math.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <math.h>
+
 
 namespace ThickEst{
     typedef std::deque< std::vector<int> > vvi;

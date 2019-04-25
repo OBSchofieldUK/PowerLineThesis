@@ -20,5 +20,12 @@ namespace convert{
     rw::math::Rotation3D<double> FRU2Image3D(rw::math::Rotation3D<double> vec){
         return FRU2Image3D(rw::math::EAA<double>(vec)).toRotation3D();
     }
+    cv::Point img2realCoord(const cv::Point &src, const cv::Size &imgSize){
+        return cv::Point(src.x-imgSize.width/2, -(src.y-imgSize.height/2));
+    }
+    void img2realCoordOverride(cv::Point &src, const cv::Size &imgSize){
+        src.x = src.x - imgSize.width / 2;
+        src.y = -(src.y - imgSize.height / 2);
+    }
 }
 
