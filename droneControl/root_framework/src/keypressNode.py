@@ -48,7 +48,7 @@ class keypress_node:
 	def __init__(self):
 
 		# launch node
-		rospy.init_node('mavlink_lora_gcs_keypress', disable_signals = True)
+		rospy.init_node('keypressNode', disable_signals = True)
 		self.rate = rospy.Rate(update_interval)
 		self.keypress_pub = rospy.Publisher(mavlink_lora_keypress_pub_topic, Int8, queue_size=0)
 
