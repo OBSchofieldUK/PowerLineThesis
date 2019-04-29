@@ -19,10 +19,6 @@
 
 #include <inspec_lib/settings/ReadSettings.hpp>
 
-
-#define SLOWDOWN_FACTOR 30*5
-#define RECORD_FOLDER "/home/waarbubble/Dropbox/DroneMasters/PowerLinePhotos/AirSimFlightRecording2/"
-
 using namespace std;
 
 typedef Eigen::Matrix<double,6,1> Vector6d;
