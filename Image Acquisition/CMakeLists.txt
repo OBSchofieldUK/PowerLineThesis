@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
   rospy
   roscpp
   inspec_msg
+  inspec_lib
   std_msgs
   sensor_msgs
   cv_bridge
@@ -112,6 +113,8 @@ catkin_package(
   roscpp
   sensor_msgs
   std_msgs
+  inspec_msg
+  inspec_lib
 )
 
 ###########

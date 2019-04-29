@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
   roscpp
   std_msgs 
   inspec_msg
+  roslib
   )
 
 SET(RW_ROOT $ENV{RW_ROOT})
@@ -15,6 +16,7 @@ SET(RobWork_DIR ${RW_ROOT}/cmake)
 
 find_package(RobWork REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(RapidJSON REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -27,7 +29,10 @@ catkin_package(
     roscpp
     std_msgs
     inspec_msg
-  DEPENDS ROBWORK
+    roslib
+  DEPENDS 
+    ROBWORK
+    OpenCV
 )
 
 ###########
@@ -40,13 +45,15 @@ catkin_package(
 include_directories(include
   ${OpenCV_INCLUDE_DIRS}
   ${ROBWORK_INCLUDE_DIR}
-  ${catkin_INCLUDE_DIRS})
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-  src/Math.cpp
-  src/RosConverters.cpp
-  src/CoordinateConverters.cpp
+  src/inspec_lib/Math.cpp
+  src/inspec_lib/RosConverters.cpp
+  src/inspec_lib/CoordinateConverters.cpp
+  src/settings/ReadSettings.cpp
 )
 add_dependencies(${PROJECT_NAME} inspec_msg_generate_messages_cpp)
 

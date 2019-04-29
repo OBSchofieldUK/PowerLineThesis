@@ -34,3 +34,6 @@
 # Folders
 .vscode
 
+# File
+settings.json
+

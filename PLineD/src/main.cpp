@@ -43,7 +43,7 @@
 #define MATCHER_LINE_MAX_ERROR 30
 #define MATCHER_NO_MATCH_COST 30
 
-#define SHOW_IMAGE_ORIGINAL false
+#define SHOW_IMAGE_ORIGINAL true
 #define SHOW_IMAGE_FINAL true
 
 #define DEBUG_PLINED false
@@ -292,28 +292,31 @@ int main(int argc, char* argv[]){
             cv::imshow("Proximity",out1);
         }else{
             Prox::filter(lines);
+            
         }
-        //cv::waitKey(1);
+        if(DEBUG) cout << "Proximity Filter Lines Found: " << lines.size() << endl;
+
         // ############### Ready Data for Matching #######################
         for(uint i = 0; i < lines.size(); i++){
             currentLines.push_back(math::leastSquareRegression(lines[i],img.size()));
         }
         syncEstimateLines();
         // ############# Thickness Est ###############################
-        ThickEst::vvi pLines;
+        /*ThickEst::vvi pLines;
         ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
         //ThickEst::print(pLines);
         ThickEst::vp lineThick;
         ThickEst::findThickness(pLines,lineThick);
         mathLine Thickness = math::leastSquareRegression(lineThick,img.size(),false);
         cout << Thickness << endl;
-        //ThickEst::print(pLines);
+        //ThickEst::print(pLines);*/
         // ############# Vannishing point Filter #####################
         if(DEBUG) cout << "Doing Vanishing point Filter" << endl;
 
         vector<mathLine> VPFiltered_lines;
         VP::filterLines(currentLines,VPFiltered_lines,50,300);
         currentLines = VPFiltered_lines;
+        if(DEBUG) cout << "VPFilter found: " << currentLines.size() << endl;
 
         // ################ Line Matching ########################
         if(DEBUG) cout << "Line Mathcher" << endl;
@@ -330,7 +333,7 @@ int main(int argc, char* argv[]){
 
             cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
 
-            if(DEBUG) cout << "Drawing Found Lines: " << loop_num << endl;
+            if(DEBUG) cout << "Drawing Found Lines: " << lines.size() << endl;
             //PLineD::printContours(out, lines);
 
             map<uint,bool> drawn;
@@ -344,7 +347,8 @@ int main(int argc, char* argv[]){
                 }
                 
             }
-            if(DEBUG) cout << "Drawing EST Lines" << endl;
+            if(DEBUG) cout << "Drawing EST Lines: " << lineEstimates.size() << endl;
+
             if(!lineEstimates.empty()){
                 for(inspec_msg::line2d line: lineEstimates.front().lines){
                     if(!drawn[uint(line.id)]){
@@ -358,7 +362,6 @@ int main(int argc, char* argv[]){
 
             cv::imshow("PLineD",out);
         }
-        return 0;
         if(!DEBUG_SINGLE_IMG){ 
             cv::waitKey(1);
         }else{

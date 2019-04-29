@@ -6,10 +6,11 @@ namespace ThickEst{
         int first=imgSize.width,last=0;
         for(auto p: src){
             cv::Point2f point; 
-            double angle = std::atan(line.a);
+            /*double angle = std::atan(line.a);
             point.x = std::cos(angle)*p.x - sin(angle)*p.y;
             point.y = std::sin(angle)*p.x + cos(angle)*p.y;
-            std::cout << point << p << std::endl; 
+            std::cout << point << p << std::endl; */
+            point = p;
             bool notThere = true;
             
             for(uint i = 0; i < dst[point.x].size(); i++){

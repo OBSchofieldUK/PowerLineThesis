@@ -17,13 +17,17 @@
 
 #include <inspec_msg/position.h>
 
+#include <inspec_lib/settings/ReadSettings.hpp>
+
 
 #define SLOWDOWN_FACTOR 30*5
-#define RECORD_FOLDER "/home/oschofield/CloudStorage/Dropbox/DroneMasters/PowerLinePhotos/AirSimFlightRecording2/"
+#define RECORD_FOLDER "/home/waarbubble/Dropbox/DroneMasters/PowerLinePhotos/AirSimFlightRecording2/"
 
 using namespace std;
 
 typedef Eigen::Matrix<double,6,1> Vector6d;
+
+settings::AirSimRecording setting;
 
 struct airSimData{
     rw::math::Vector3D<double> pos;
@@ -99,12 +103,14 @@ int main(int argc, char **argv){
     ros::NodeHandle nh = ros::NodeHandle();
     img_pub = nh.advertise<sensor_msgs::Image>("/webcam/image_raw",10);
     position_pub = nh.advertise<inspec_msg::position>("DroneInfo/Position",10);
-
+    settings::read(setting);
+    
     // ############# Open Recording File #################
     ifstream file;
-    file.open(string(RECORD_FOLDER)+"airsim_rec.txt");
+    file.open(setting.Recording_folder+"airsim_rec.txt");
     if (!file){
-        cout << "Unable to open file at: " << string(RECORD_FOLDER)+"airsim_rec.txt"  << endl;
+        cout << "Unable to open file at: " << setting.Recording_folder+"airsim_rec.txt"  << endl;
+        cout << "Please change the Path in settings.jason under AirSimRecording: Record_folder" << endl;
         exit(1);
     }
     bool first = true;
@@ -132,7 +138,7 @@ int main(int argc, char **argv){
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             first = false;
         }else{
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000*SLOWDOWN_FACTOR/30));
+            std::this_thread::sleep_for(std::chrono::milliseconds(long(1000*setting.SlowDownFactor/30)));
         }
         
         
