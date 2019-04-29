@@ -17,6 +17,7 @@
 #include <inspec_msg/line2d_array.h>
 
 #include <inspec_lib/Math.hpp>
+#include <inspec_lib/settings/ReadSettings.hpp>
 
 #include "Matcher.hpp"
 #include "VanishingPointFilter.hpp"
@@ -43,15 +44,13 @@
 #define MATCHER_LINE_MAX_ERROR 30
 #define MATCHER_NO_MATCH_COST 30
 
-#define SHOW_IMAGE_ORIGINAL true
-#define SHOW_IMAGE_FINAL true
-
 #define DEBUG_PLINED false
 #define DEBUG_PROXIMITY_FILTER_ false
-#define DEBUG_SINGLE_IMG true
-#define DEBUG true
+
 
 using namespace std;
+
+settings::Image_processing_node setting_node;
 
 typedef math::mathLine2d mathLine;
 
@@ -157,8 +156,7 @@ lineSeg PLineD_full(cv::Mat &src){
 // ############### ROS FUNCTIONS #########################
 
 void image_handler(sensor_msgs::Image msg){
-    //cv::Mat img = cv::Mat(msg.data);
-    cout << "Image Num: " << msg.header.seq << endl;
+    if(setting_node.debug) cout << "Image Num: " << msg.header.seq << endl;
     img_num = msg.header.seq;
     cv_bridge::CvImagePtr cv_ptr;
     try{
@@ -169,7 +167,7 @@ void image_handler(sensor_msgs::Image msg){
     }
     cv::resize(cv_ptr->image,img,cv::Size(1920,1080));      //Resize To 1920x1080
     gotImage = true;
-    if(SHOW_IMAGE_ORIGINAL) {
+    if(setting_node.show_incomming_image) {
         cv::imshow("TestImage",img);
         cv::waitKey(1);
     }
@@ -241,6 +239,8 @@ int main(int argc, char* argv[]){
     image_sub = nh->subscribe("/webcam/image_raw",300,image_handler);
     line_pub = nh->advertise<inspec_msg::line2d_array>("/linedetector/lines2d",1);
     
+    settings::read(setting_node);
+
     // ############## Setup Output windows ##############
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     if(DEBUG_PLINED){
@@ -253,8 +253,8 @@ int main(int argc, char* argv[]){
         ShowImage("PLineD",BLACK,1210,610);
     }else{
 
-        if(SHOW_IMAGE_ORIGINAL) ShowImage("TestImage",BLACK);
-        if(SHOW_IMAGE_FINAL) ShowImage("PLineD",BLACK,50,600);
+        if(setting_node.show_incomming_image) ShowImage("TestImage",BLACK);
+        if(setting_node.show_final_image) ShowImage("PLineD",BLACK,50,600);
 
     }
     if(DEBUG_PROXIMITY_FILTER_){
@@ -277,13 +277,13 @@ int main(int argc, char* argv[]){
         }
         loop_num++;
         // ############# Pline D #####################################
-        if(DEBUG) {
+        if(setting_node.debug) {
             std::cout << endl << endl << "###########################################" << endl;
             cout << "Start Work Flow Image: " << img_num << endl;
         }
 
         lineSeg lines = PLineD_full(img);
-        if(DEBUG) cout << "PlineD Done found " << lines.size() << " Lines" << endl;
+        if(setting_node.debug) cout << "PlineD Done found " << lines.size() << " Lines" << endl;
        
         //############## Proximity Filtering ############################
         if(DEBUG_PROXIMITY_FILTER_){
@@ -294,7 +294,7 @@ int main(int argc, char* argv[]){
             Prox::filter(lines);
             
         }
-        if(DEBUG) cout << "Proximity Filter Lines Found: " << lines.size() << endl;
+        if(setting_node.debug) cout << "Proximity Filter Lines Found: " << lines.size() << endl;
 
         // ############### Ready Data for Matching #######################
         for(uint i = 0; i < lines.size(); i++){
@@ -311,29 +311,29 @@ int main(int argc, char* argv[]){
         cout << Thickness << endl;
         //ThickEst::print(pLines);*/
         // ############# Vannishing point Filter #####################
-        if(DEBUG) cout << "Doing Vanishing point Filter" << endl;
+        if(setting_node.debug) cout << "Doing Vanishing point Filter" << endl;
 
         vector<mathLine> VPFiltered_lines;
         VP::filterLines(currentLines,VPFiltered_lines,50,300);
         currentLines = VPFiltered_lines;
-        if(DEBUG) cout << "VPFilter found: " << currentLines.size() << endl;
+        if(setting_node.debug) cout << "VPFilter found: " << currentLines.size() << endl;
 
         // ################ Line Matching ########################
-        if(DEBUG) cout << "Line Mathcher" << endl;
+        if(setting_node.debug) cout << "Line Mathcher" << endl;
         
         vector<inspec_msg::line2d> matched_lines; 
         Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
         
         // ################ Finalize #############################
-        if(DEBUG) cout << "Published Lines To Ros" << endl << endl;
+        if(setting_node.debug) cout << "Published Lines To Ros" << endl << endl;
         PublishLinesToRos(matched_lines);
         gotImage = false;
         //################# DEBUG ################################
-        if(SHOW_IMAGE_FINAL){
+        if(setting_node.show_final_image){
 
             cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
 
-            if(DEBUG) cout << "Drawing Found Lines: " << lines.size() << endl;
+            if(setting_node.debug) cout << "Drawing Found Lines: " << lines.size() << endl;
             //PLineD::printContours(out, lines);
 
             map<uint,bool> drawn;
@@ -347,7 +347,7 @@ int main(int argc, char* argv[]){
                 }
                 
             }
-            if(DEBUG) cout << "Drawing EST Lines: " << lineEstimates.size() << endl;
+            if(setting_node.debug) cout << "Drawing EST Lines: " << lineEstimates.size() << endl;
 
             if(!lineEstimates.empty()){
                 for(inspec_msg::line2d line: lineEstimates.front().lines){
@@ -362,7 +362,7 @@ int main(int argc, char* argv[]){
 
             cv::imshow("PLineD",out);
         }
-        if(!DEBUG_SINGLE_IMG){ 
+        if(!setting_node.press_to_continue){ 
             cv::waitKey(1);
         }else{
             cv::waitKey(0);

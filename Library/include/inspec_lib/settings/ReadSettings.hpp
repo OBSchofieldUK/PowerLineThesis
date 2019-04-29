@@ -19,6 +19,8 @@
 
 namespace settings{
     void read(AirSimRecording &dst);
+    void read(PLineD &dst);
+    void read(Image_processing_node &dst);
 
     rapidjson::Document readFile(void);
     void saveFile(rapidjson::Document &doc);
