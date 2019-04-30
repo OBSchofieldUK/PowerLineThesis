@@ -46,6 +46,30 @@ namespace math{
         ret.b = (y_sum-ret.a*x_sum)/N;
         return ret;
     }
+    mathLine2d leastSquareRegression(std::vector<cv::Point2f> aLine, const cv::Size &imgSize, bool move00toImgCenter){ // Should be const ref
+        int N = aLine.size();
+        double y_sum, x_sum, xy_sum, xx_sum;
+        for(int i = 0; i < N; i++){
+            double x,y;
+            if(move00toImgCenter){
+                x = aLine[i].x-imgSize.width/2;
+                y = -(aLine[i].y-imgSize.height/2);    
+            }else{
+                x = aLine[i].x;
+                y = aLine[i].y;
+            }
+
+            y_sum += y;
+            x_sum += x;
+            xy_sum += x*y;
+            xx_sum += x*x;
+        }
+
+        mathLine2d ret;
+        ret.a = (N*xy_sum-x_sum*y_sum)/(N*xx_sum-(x_sum*x_sum));
+        ret.b = (y_sum-ret.a*x_sum)/N;
+        return ret;
+    }
     double vecAngle(const inspec_msg::line2d &l1, const inspec_msg::line2d &l2){
         double length1 = std::sqrt(std::pow(l1.dx,2)+std::pow(l1.dy,2));
         double length2 = std::sqrt(std::pow(l2.dx,2)+std::pow(l2.dy,2));
