@@ -1,0 +1,16 @@
+
+
+#define earthRadiusKm 6371.0
+
+double GPSdistance(const gcs::GPS &point1, const gcs::GPS &point2, bool print_dist){
+    double lat1r, lon1r, lat2r, lon2r, u, v;
+    lat1r = deg2rad(point1.latitude);
+    lon1r = deg2rad(point1.longitude);
+    lat2r = deg2rad(point2.latitude);
+    lon2r = deg2rad(point2.longitude);
+    u = sin((lat2r - lat1r)/2);
+    v = sin((lon2r - lon1r)/2);
+    double dist = 1000*(2.0 * earthRadiusKm * asin(sqrt(u * u + cos(lat1r) * cos(lat2r) * v * v)));
+    if(print_dist) cout << "[Ground Control]: " << "Distance calculated " << dist << endl;
+    return dist;
+}
