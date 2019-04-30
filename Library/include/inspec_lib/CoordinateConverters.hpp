@@ -14,8 +14,11 @@ namespace convert{
     rw::math::Rotation3D<double> FRU2Image3D(rw::math::Rotation3D<double> vec);
     rw::math::Vector3D<double> FRU2Image3D(rw::math::Vector3D<double> vec);
     rw::math::Vector3D<double> Image3D2FRU(rw::math::Vector3D<double> vec);
+    
     cv::Point img2realCoord(const cv::Point &src, const cv::Size &imgSize = cv::Size(1920, 1080));
     void img2realCoordOverride(cv::Point &src, const cv::Size &imgSize = cv::Size(1920, 1080));
+    cv::Point real2imgCoord(const cv::Point &src, const cv::Size &imgSize = cv::Size(1920, 1080));
+    void real2imgCoordOverride(cv::Point &src, const cv::Size &imgSize = cv::Size(1920, 1080));
+    
 }
-
 #endif

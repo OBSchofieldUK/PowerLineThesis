@@ -27,5 +27,12 @@ namespace convert{
         src.x = src.x - imgSize.width / 2;
         src.y = -(src.y - imgSize.height / 2);
     }
+    cv::Point real2imgCoord(const cv::Point &src, const cv::Size &imgSize){
+        return cv::Point(src.x+imgSize.width/2, imgSize.height/2-src.y);
+    }
+    void real2imgCoordOverride(cv::Point &src, const cv::Size &imgSize){
+        src.x = src.x+imgSize.width/2;
+        src.y = imgSize.height/2-src.y;
+    }
 }
 

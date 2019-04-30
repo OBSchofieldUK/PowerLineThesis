@@ -191,9 +191,9 @@ void PublishLinesToRos(vector<inspec_msg::line2d> &lines){
 void syncEstimateLines(){
     ros::spinOnce();
     if(lineEstimates.empty()){
-        cout << "No Line Estimates Available" << endl;
+        if(setting_node.debug) cout << "No Line Estimates Available" << endl;
         lineEstimates.push_back(convert::line2d_array_construct());
-        cout << "size: " << lineEstimates.size() << endl;
+        if(setting_node.debug) cout << "size: " << lineEstimates.size() << endl;
         return;
     }
     if(lineEstimates.size() > 1){
@@ -202,7 +202,7 @@ void syncEstimateLines(){
         }else{
             while(lineEstimates.front().header.seq < img_num){
                 if(lineEstimates.empty()){
-                    cout << "No Line Estimates" << endl;
+                    if(setting_node.debug) cout << "No Line Estimates" << endl;
                     lineEstimates.push_back(convert::line2d_array_construct());
                     break;
                 }
@@ -214,7 +214,7 @@ void syncEstimateLines(){
             lineEstimates.front() = convert::line2d_array_construct(); 
         }
     }
-    cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
+    if(setting_node.debug) cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
 }
 
 //################ MAIN ##################################
@@ -290,14 +290,14 @@ int main(int argc, char* argv[]){
         }
         syncEstimateLines();
         // ############# Thickness Est ###############################
-        /*ThickEst::vvi pLines;
+        ThickEst::vvi pLines;
         ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
         //ThickEst::print(pLines);
-        ThickEst::vp lineThick;
+        ThickEst::vpf lineThick;
         ThickEst::findThickness(pLines,lineThick);
         mathLine Thickness = math::leastSquareRegression(lineThick,img.size(),false);
-        cout << Thickness << endl;
-        //ThickEst::print(pLines);*/
+        //cout << Thickness << endl;
+        //ThickEst::print(pLines);
         // ############# Vannishing point Filter #####################
         if(setting_node.debug) cout << "Doing Vanishing point Filter" << endl;
 
