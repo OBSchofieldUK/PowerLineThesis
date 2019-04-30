@@ -149,4 +149,26 @@ namespace settings{
             saveFile(doc);
         }
     }
+
+    void read(PLineD &dst){
+        rapidjson::Document doc = readFile();
+        dst= PLineDDefault;
+        if(doc.HasMember("PLineD")){
+            const rapidjson::Value& obj = doc["PLineD"];
+            if(obj.HasMember("Canny")){
+                const rapidjson::Value& obj2 = doc["Canny"];
+                if(obj2.HasMember("Filter size")){
+                    dst.canny_filter_size = obj2["Filter size"].GetUint();
+                }
+                if(obj2.HasMember("Treshold Low")){
+                    dst.canny_treshold_low = obj2["Treshold Low"].GetUint();
+                }
+                if(obj2.HasMember("Treshold High")){
+                    dst.canny_treshold_high = obj2["Treshold High"].GetUint();
+                }
+            }
+        }else{
+
+        }
+    }
 }

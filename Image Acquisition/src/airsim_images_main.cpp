@@ -59,8 +59,8 @@ void getAirSimData(const string &line, airSimData &dst){
 
     vector<string> imgPaths;
     split(rows[8],';',imgPaths);
-    dst.imgPath = string(RECORD_FOLDER) + "images/" +imgPaths[0];
-    dst.depthPath = string(RECORD_FOLDER) + "images/" +imgPaths[1];
+    dst.imgPath = string(setting.Recording_folder) + "images/" +imgPaths[0];
+    dst.depthPath = string(setting.Recording_folder) + "images/" +imgPaths[1];
     
 }
 
