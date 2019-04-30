@@ -27,20 +27,6 @@
 
 #define lineSeg std::vector< std::vector<cv::Point> >
 
-#define IMAGE_CONTOURS_FILTER_KERNAL_SIZE 3u    //Must be uneven positive integer
-#define IMAGE_CONTOURS_TRESHOLD_LOW 36u         //between 0 and 255
-#define IMAGE_CONTOURS_TRESHOLD_HIGH 150u       //between 0 and 255 should be larger the low treshold
-#define LINE_CUT_MIN_LENGTH 15u                 //number of pixel in line
-#define LINE_CUT_MAX_ANGLE 30.0f                //Angle in deg
-#define LINE_CUT_STEP_SIZE 5u                   //Array positions
-#define LINE_COV_RATIO 600u                     //covariance eigen vector ratio
-#define LINE_GROUP_MIN_START_LENGTH 100u        //length in pixel
-#define LINE_GROUP_MIN_END_LENGTH 400u          //length in pixel
-#define LINE_GROUP_MAX_ANGLE_DIF 5.0f           //Angle in deg
-#define LINE_GROUP_MAX_LINE_DIST 10             //distance in pixel
-#define LINE_PARALLEL_ACTIVE false              //activate for extra sorting if nessesary
-#define LINE_PARALLEL_MAX_ANGLE 5.0f            //Angle in deg
-
 #define MATCHER_LINE_MAX_ERROR 30
 #define MATCHER_NO_MATCH_COST 30
 
@@ -51,6 +37,7 @@
 using namespace std;
 
 settings::Image_processing_node setting_node;
+settings::PLineD setting_PLineD;
 
 typedef math::mathLine2d mathLine;
 
@@ -92,39 +79,39 @@ lineSeg PLineD_full(cv::Mat &src){
 
     cvtColor(src,src_gray,CV_BGR2GRAY);                     //Make Image gray
     PLineD::contoursCanny(src_gray,contours                 //Find Contours
-                    ,IMAGE_CONTOURS_FILTER_KERNAL_SIZE      //Gausian & sobal filter kernal size
-                    ,IMAGE_CONTOURS_TRESHOLD_LOW            //Canny lower treshold limit
-                    ,IMAGE_CONTOURS_TRESHOLD_HIGH);         //Canny Upper treshold limit            
+                    ,setting_PLineD.canny_filter_size       //Gausian & sobal filter kernal size
+                    ,setting_PLineD.canny_treshold_low      //Canny lower treshold limit
+                    ,setting_PLineD.canny_treshold_high);   //Canny Upper treshold limit            
     
     //########### Cut segments ###################
     lineSeg segments; 
 
     PLineD::cutSeg(contours,segments                        //Cuts the conturs into more strait lines
-                    ,LINE_CUT_MIN_LENGTH                    //Minimum pixel on a line that can be cut up
-                    ,LINE_CUT_MAX_ANGLE                     //Maximum angle of the line before it is cut
-                    ,LINE_CUT_STEP_SIZE);                   //angle defined between Pixel(k-step),Pixel(k),Pixel(k+step)
+                    ,setting_PLineD.segcut_min_length       //Minimum pixel on a line that can be cut up
+                    ,setting_PLineD.segcut_max_angle        //Maximum angle of the line before it is cut
+                    ,setting_PLineD.segcut_step_size);      //angle defined between Pixel(k-step),Pixel(k),Pixel(k+step)
 
     //########### Covariance filter ##############
     lineSeg covS;
     PLineD::segCov(segments,covS                            //Remove linesegments where the width to length ratio is bad
-                    ,LINE_COV_RATIO);                       //Minimum Width to Length ratio of line segment
+                    ,setting_PLineD.covariance_ratio);      //Minimum Width to Length ratio of line segment
 
     // ############ Grouping and Size filter #############
     lineSeg grpS;
     std::vector<cv::Point> angelVector;                     //Used to contain thedirection vector of line segments
 
     PLineD::groupSeg(covS,grpS,angelVector                  //Find and Combine line segments on same trajectory, and filter small lines away
-                    ,LINE_GROUP_MIN_END_LENGTH              //Minimum number of pixel a line must consist of at the end of the algorithm
-                    ,LINE_GROUP_MIN_START_LENGTH            //Minimum number of pixel a line must consist of to be base for extension.
-                    ,LINE_GROUP_MAX_ANGLE_DIF               //Maximum angel between lines
-                    ,LINE_GROUP_MAX_LINE_DIST);             //max parallel distance between line and midt point of other line
+                    ,setting_PLineD.group_min_end_length    //Minimum number of pixel a line must consist of at the end of the algorithm
+                    ,setting_PLineD.group_min_start_length  //Minimum number of pixel a line must consist of to be base for extension.
+                    ,setting_PLineD.group_max_angle_dif     //Maximum angel between lines
+                    ,setting_PLineD.group_max_line_dist);   //max parallel distance between line and midt point of other line
     
     // ############ parallel lines ########
     lineSeg parallelLines;
-    if(LINE_PARALLEL_ACTIVE){
+    if(setting_PLineD.Parrallel_active){
         PLineD::parallelSeg(grpS, angelVector               //Finds the largest group of parallel lines
                     , parallelLines                         //Where to Store the Data
-                    ,LINE_PARALLEL_MAX_ANGLE);              //Maximum angle difference to be considered parallel
+                    ,setting_PLineD.Parralel_max_angle);    //Maximum angle difference to be considered parallel
     }else{
         parallelLines = grpS;
     }
@@ -141,12 +128,12 @@ lineSeg PLineD_full(cv::Mat &src){
         PLineD::printContours(out2, segments);
         PLineD::printContours(out3, covS);
         PLineD::printContours(out4, grpS);
-        if(LINE_PARALLEL_ACTIVE) PLineD::printContours(out5, parallelLines);
+        if(setting_PLineD.Parrallel_active) PLineD::printContours(out5, parallelLines);
         cv::imshow("Conturs",out1);
         cv::imshow("SegCut",out2);
         cv::imshow("CovFil",out3);
         cv::imshow("GroupSeg",out4);
-        if(LINE_PARALLEL_ACTIVE) cv::imshow("ParLines",out5);
+        if(setting_PLineD.Parrallel_active) cv::imshow("ParLines",out5);
         cv::waitKey(1);
     }
 
@@ -240,16 +227,17 @@ int main(int argc, char* argv[]){
     line_pub = nh->advertise<inspec_msg::line2d_array>("/linedetector/lines2d",1);
     
     settings::read(setting_node);
+    settings::read(setting_PLineD);
 
     // ############## Setup Output windows ##############
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
-    if(DEBUG_PLINED){
+    if(setting_PLineD.debug){
         ShowImage("TestImage",BLACK ,10,10);
         ShowImage("Conturs",BLACK,610,10);
         ShowImage("SegCut",BLACK,1210,10);
         ShowImage("CovFil",BLACK,10,610);
         ShowImage("GroupSeg",BLACK,610,610);
-        if(LINE_PARALLEL_ACTIVE) ShowImage("ParLines",BLACK,1210,610);
+        if(setting_PLineD.Parrallel_active) ShowImage("ParLines",BLACK,1210,610);
         ShowImage("PLineD",BLACK,1210,610);
     }else{
 

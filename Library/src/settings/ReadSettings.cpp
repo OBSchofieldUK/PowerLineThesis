@@ -156,7 +156,7 @@ namespace settings{
         if(doc.HasMember("PLineD")){
             const rapidjson::Value& obj = doc["PLineD"];
             if(obj.HasMember("Canny")){
-                const rapidjson::Value& obj2 = doc["Canny"];
+                const rapidjson::Value& obj2 = obj["Canny"];
                 if(obj2.HasMember("Filter size")){
                     dst.canny_filter_size = obj2["Filter size"].GetUint();
                 }
@@ -167,8 +167,103 @@ namespace settings{
                     dst.canny_treshold_high = obj2["Treshold High"].GetUint();
                 }
             }
+            if(obj.HasMember("Segment Cut")){
+                const rapidjson::Value& obj2 = obj["Segment Cut"];
+                if(obj2.HasMember("Min length")){
+                    dst.segcut_min_length = obj2["Min length"].GetUint();
+                }
+                if(obj2.HasMember("Max angle")){
+                    dst.segcut_max_angle = obj2["Max angle"].GetDouble();
+                }
+                if(obj2.HasMember("Step size")){
+                    dst.segcut_step_size = obj2["Step size"].GetUint();
+                }
+            }
+            if(obj.HasMember("Covariance ratio")){
+                dst.covariance_ratio = obj["Covariance ratio"].GetDouble();
+            }
+            if(obj.HasMember("Segment grouping")){     
+                const rapidjson::Value& obj2 = obj["Segment grouping"];
+                if(obj2.HasMember("Min length finnished")){
+                    dst.group_min_end_length = obj2["Min length finnished"].GetUint();
+                }
+                if(obj2.HasMember("Min length start")){
+                    dst.group_min_start_length = obj2["Min length start"].GetUint();
+                }
+                if(obj2.HasMember("Max angle difference")){
+                    dst.group_max_angle_dif = obj2["Max angle difference"].GetDouble();
+                }
+                if(obj2.HasMember("Max line distance")){
+                    dst.group_max_line_dist = obj2["Max line distance"].GetUint();
+                }
+            }
+            if(obj.HasMember("Parrallel line filter")){
+                const rapidjson::Value& obj2 = obj["Parrallel line filter"];
+                if(obj2.HasMember("Use filter")){
+                    dst.Parrallel_active = obj2["Use filter"].GetBool();
+                }
+                if(obj2.HasMember("Max angle")){
+                    dst.Parralel_max_angle = obj2["Max angle"].GetDouble();
+                }
+            }
+            if(obj.HasMember("Debug")){
+                dst.debug = obj["Debug"].GetBool();
+            }
         }else{
+            rapidjson::Value Object(rapidjson::kObjectType);
 
+
+            // CANNY
+            rapidjson::Value CObject(rapidjson::kObjectType);
+
+            rapidjson::Value cfs(PLineDDefault.canny_filter_size);
+            CObject.AddMember("Filter size",cfs,doc.GetAllocator());
+
+            rapidjson::Value ctl(PLineDDefault.canny_treshold_low);
+            CObject.AddMember("Treshold low",ctl,doc.GetAllocator());
+
+            rapidjson::Value cth(PLineDDefault.canny_treshold_high);
+            CObject.AddMember("Treshold high",cth,doc.GetAllocator());
+
+            Object.AddMember("Canny",CObject,doc.GetAllocator());
+
+            // COV
+            rapidjson::Value CovR(PLineDDefault.covariance_ratio);
+            Object.AddMember("Covariance ratio",CovR,doc.GetAllocator());
+
+            // Group
+            rapidjson::Value GObject(rapidjson::kObjectType);
+
+            rapidjson::Value Gmlf(PLineDDefault.group_min_end_length);
+            rapidjson::Value Gmls(PLineDDefault.group_min_start_length);
+            rapidjson::Value Gmad(PLineDDefault.group_max_angle_dif);
+            rapidjson::Value Gmld(PLineDDefault.group_max_line_dist);
+
+            GObject.AddMember("Min length finnished",Gmlf,doc.GetAllocator());
+            GObject.AddMember("Min length start",Gmls,doc.GetAllocator());
+            GObject.AddMember("Max angle difference",Gmad,doc.GetAllocator());
+            GObject.AddMember("Max line distance",Gmld,doc.GetAllocator());
+
+            Object.AddMember("Segment grouping",GObject,doc.GetAllocator());
+            
+            // Parrallel
+
+            rapidjson::Value PObject(rapidjson::kObjectType);
+            rapidjson::Value Pa(PLineDDefault.Parrallel_active);
+            rapidjson::Value Pma(PLineDDefault.Parralel_max_angle);
+
+            PObject.AddMember("Use filter",Pa,doc.GetAllocator());
+            PObject.AddMember("Max angle",Pma, doc.GetAllocator());
+
+            Object.AddMember("Parrallel line filter", PObject,doc.GetAllocator());
+
+            //Other
+            rapidjson::Value debug(PLineDDefault.debug);
+            Object.AddMember("Debug",debug,doc.GetAllocator());
+
+            doc.AddMember("PLineD",Object,doc.GetAllocator());
+
+            saveFile(doc);
         }
     }
 }

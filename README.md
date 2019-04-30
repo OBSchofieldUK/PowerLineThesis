@@ -7,7 +7,7 @@ For the Project to work the following dependencies must be installed
 sudo apt-get install ros-kinetic-cv-bridge
 sudo apt-get install ros-kinetic-video-stream-opencv
 ```
-The Rapidjson libary is nessesary to run the code
+The Rapidjson libary is nessesary to run the code. It is currently tested with release version 1.1.0. If [-Werror=implicit-fallthrough=] ocurs during build go into the file and write continue; at the end of the cases
 
 The Robwork Libary is also Nessesary to run the system. No need to install all the optinal dependecies and RWSim RWHardvare and RWStudio
 
