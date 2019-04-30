@@ -43,7 +43,6 @@ class pylon_node():
         if msg.data == True:
             if self.dronePos.latitude == 0.0 or self.dronePos.longitude==0.0:
                 rospy.logwarn("Warning: unable to get drone coordinates!")
-                continue
             else:
                 boundInter = (self.boundary/2) 
                 curLatlon = [self.dronePos.latitude, self.dronePos.longitude]
@@ -55,20 +54,19 @@ class pylon_node():
                 boundBR = utm.to_latlon(bottomRightBound[0], bottomRightBound[1], utmPos[2], utmPos[3])
 
                 boundbox = str(boundTL[1])+","+str(boundTL[0])+","+str(boundBR[1])+","+str(boundBR[0])
-                localList = self.getPylons(boundbox)
+                self.getPylons(boundbox)
                 self.pylonPub.publish(self.pylonList)
 
     def getPylons(self, boundaryStr):
         payload = {"bbox": boundaryStr}
         r = requests.get(url=self.osmAPI, params=payload)
-        # print(r.content)
-        print(r.url)
+        
         xmlRoot = ElementTree.fromstring(r.content)
 
         # working find power nodes
         nodes = xmlRoot.findall('node')
-        numTowers = xmlRoot.findall("node//tag/[@v='tower']")
-        print("number of towers: ", len(numTowers))
+        # numTowers = xmlRoot.findall("node//tag/[@v='tower']")
+        # print("number of towers: ", len(numTowers))
         towerList = []
         for child in nodes:
             tags = child.findall(".//tag/[@k]")
@@ -90,7 +88,6 @@ class pylon_node():
                     towerType = ""
         self.pylonList = towerList
         return towerList
-    
 
 if __name__ == "__main__":
     pl = pylon_node()
