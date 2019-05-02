@@ -29,7 +29,7 @@ class pylon_node():
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
         self. pylonPub = rospy.Publisher(pylonDataPub, pylonList, queue_size=1)
         self.osmAPI = "https://api.openstreetmap.org/api/0.6/map"
-        self.boundary = 100 #metres -- curpos +/- (boundary / 2)  
+        self.boundary = 150 #metres -- curpos +/- (boundary / 2)  
         self.dronePos = NavSatFix()
         self.pylonList = []
         rospy.spin()
@@ -54,8 +54,10 @@ class pylon_node():
                 boundBR = utm.to_latlon(bottomRightBound[0], bottomRightBound[1], utmPos[2], utmPos[3])
 
                 boundbox = str(boundTL[1])+","+str(boundTL[0])+","+str(boundBR[1])+","+str(boundBR[0])
+                # print boundbox
                 self.getPylons(boundbox)
                 self.pylonPub.publish(self.pylonList)
+
 
     def getPylons(self, boundaryStr):
         payload = {"bbox": boundaryStr}
@@ -65,8 +67,8 @@ class pylon_node():
 
         # working find power nodes
         nodes = xmlRoot.findall('node')
-        # numTowers = xmlRoot.findall("node//tag/[@v='tower']")
-        # print("number of towers: ", len(numTowers))
+        numTowers = xmlRoot.findall("node//tag/[@v='tower']")
+        print("number of towers: ", len(numTowers))
         towerList = []
         for child in nodes:
             tags = child.findall(".//tag/[@k]")
@@ -86,7 +88,11 @@ class pylon_node():
                     pylon.type = towerType
                     towerList.append(pylon)
                     towerType = ""
+
+                    # print pylon.lat, '\t', pylon.lon
+
         self.pylonList = towerList
+
         return towerList
 
 if __name__ == "__main__":
