@@ -2,14 +2,22 @@
 
 
 namespace VP{
+    settings::Vannishing_Point_Filter setting = settings::Vannishing_Point_Filter_Default;
+
     void filterLines(std::vector<math::mathLine2d> src,std::vector<math::mathLine2d> &dst,double min_point2line_error, double max_point_cluster_error){
         std::vector<VPoint> VPs;
         VP::calculateVanishingPoint(src,VPs);
-
+        if(VPs.size() < 5){
+            dst = src; 
+            return;
+        }
+        
+        
         std::vector<std::vector<Cand>> CP(VPs.size());
         buildClusterData(VPs,CP);
 
         Cand result;
+        std::cout << "Finding Center "<< std::endl << std::flush;
         bool valid = findClusterCenter(CP,result,src.size(),max_point_cluster_error,min_point2line_error);
         if(valid){
             for(uint i = 0; i < src.size(); i++){
@@ -53,23 +61,24 @@ namespace VP{
         double min_avg = max_error*2;
         int index = -1;
         for(uint i = 0; i < src.size() ; i++){
-            if(src[i][error_check_index].error < max_error){
-                double max_e = src[i][error_check_index].error*2;
-                double sum = 0;
-                uint k;
-                for(k=0; k < src[i].size(); k++){
-                    sum+=src[i][k].error;
-                    if(src[i][k].error > max_e) break; 
+            if(!src[i].empty()){
+                if(src[i][error_check_index].error < max_error){
+                    double max_e = src[i][error_check_index].error*2;
+                    double sum = 0;
+                    uint k;
+                    for(k=0; k < src[i].size(); k++){
+                        sum+=src[i][k].error;
+                        if(src[i][k].error > max_e) break; 
+                    }
+                    src[i].erase(src[i].begin()+k,src[i].end());
+                    double avg = sum/k;
+                    if(avg < min_avg){
+                        min_avg = avg;
+                        index = i;
+                    } 
                 }
-                src[i].erase(src[i].begin()+k,src[i].end());
-                double avg = sum/k;
-                if(avg < min_avg){
-                    min_avg = avg;
-                    index = i;
-                } 
             }
         }
-        std::cout << "Index: " << index << std::endl;
         if(index != -1){
             dst = src[index].back();
             if(dst.error < min_error) dst.error = min_error;

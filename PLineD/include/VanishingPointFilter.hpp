@@ -5,8 +5,11 @@
 #include <vector>
 #include <inspec_lib/Math.hpp>
 #include <iostream>
+#include <inspec_lib/settings/SettingStructs.hpp>
 
 namespace VP{
+
+    extern settings::Vannishing_Point_Filter setting;
     struct VPoint{
         uint ID1;
         uint ID2;
