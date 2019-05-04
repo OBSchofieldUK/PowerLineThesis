@@ -85,8 +85,14 @@ class droneCore():
             self.droneTakeoff()
             self.droneLoiter()
         if keypress == 'l':
-            self.droneLoiter
+            if not self.isAirbourne():
+                print "Warn: Not airbourne!"
+            else:
+                self.droneLoiter
+                
         if keypress == 'm':
+            if not self.isAirbourne():
+                self.droneTakeoff():
             self.missionEnable()
         
         

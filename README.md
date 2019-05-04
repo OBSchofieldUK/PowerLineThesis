@@ -17,7 +17,7 @@ The Project also depends on ROS. The implementation is tested to work on ros-kin
 
 # Starting the Project
 
-To Run the Algorithms you must first have a flight Recording from Airsim and change the path to the flight recording in Image_aquisition/src/airsim_images_main.cpp
+When the Nodes are run for the first time a setting.json file is generated in the main directory where settings souch as the location of the Airsim recording folder can be found.
 
 ```bash
 roslaunch image_aquisition airsim_img.launch
