@@ -94,6 +94,12 @@ namespace settings{
             if(ASR.HasMember("SlowDownFactor")){
                 dst.SlowDownFactor = ASR["SlowDownFactor"].GetDouble();
             }
+            if(ASR.HasMember("Start at image num")){
+                dst.start_at_img_num = ASR["Start at image num"].GetUint();
+            }
+            if(ASR.HasMember("End at image num")){
+                dst.end_at_img_num = ASR["End at image num"].GetUint();
+            }
         }else{
             rapidjson::Value AirSimRecordingObject(rapidjson::kObjectType);
 
@@ -102,6 +108,12 @@ namespace settings{
             
             rapidjson::Value Slow_Factor(AirSimRecordingDefault.SlowDownFactor);
             AirSimRecordingObject.AddMember("SlowDownFactor",Slow_Factor,doc.GetAllocator());
+
+            rapidjson::Value StartImg(AirSimRecordingDefault.start_at_img_num);
+            AirSimRecordingObject.AddMember("Start at image num",StartImg,doc.GetAllocator());
+
+            rapidjson::Value EndImg(AirSimRecordingDefault.end_at_img_num);
+            AirSimRecordingObject.AddMember("End at image num",EndImg,doc.GetAllocator());
 
             doc.AddMember("AirSimRecording",AirSimRecordingObject,doc.GetAllocator());
 
@@ -227,6 +239,20 @@ namespace settings{
 
             Object.AddMember("Canny",CObject,doc.GetAllocator());
 
+            // Segment Cut
+            rapidjson::Value SCObject(rapidjson::kObjectType);
+
+            rapidjson::Value scml(PLineDDefault.segcut_min_length);
+            rapidjson::Value scss(PLineDDefault.segcut_step_size);
+            rapidjson::Value scma(PLineDDefault.segcut_max_angle);
+
+            SCObject.AddMember("Min length",scml,doc.GetAllocator());
+            SCObject.AddMember("Max angle",scma,doc.GetAllocator());
+            SCObject.AddMember("Step size",scss,doc.GetAllocator());
+
+            Object.AddMember("Segment Cut",SCObject,doc.GetAllocator());
+
+
             // COV
             rapidjson::Value CovR(PLineDDefault.covariance_ratio);
             Object.AddMember("Covariance ratio",CovR,doc.GetAllocator());
@@ -265,5 +291,8 @@ namespace settings{
 
             saveFile(doc);
         }
+    }
+    void read(Proximity_Filter &dst){
+
     }
 }

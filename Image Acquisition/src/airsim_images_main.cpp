@@ -118,7 +118,12 @@ int main(int argc, char **argv){
     // Loop thrugh 
     string line;
     getline(file,line);
-    while (getline(file,line)&& ros::ok()){
+    for(uint i = 0; i < setting.start_at_img_num; i++){
+         getline(file,line);
+         header.seq++;
+    }
+    
+    while (getline(file,line) && ros::ok() && header.seq < setting.end_at_img_num+1){
         airSimData data;
         getAirSimData(line,data);
         cv::Mat img = cv::imread(data.imgPath);

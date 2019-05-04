@@ -6,13 +6,14 @@
 
 typedef unsigned char uchar;
 
-namespace settings{
-    
+namespace settings{ 
     struct AirSimRecording{
         std::string Recording_folder;
         double SlowDownFactor;
+        uint start_at_img_num;
+        uint end_at_img_num;
     };
-    const AirSimRecording AirSimRecordingDefault = {" ",1.0};
+    const AirSimRecording AirSimRecordingDefault = {" ",1.0,0,6000};
     
     struct PLineD{
         uint canny_filter_size;
@@ -35,7 +36,7 @@ namespace settings{
 
         bool debug;
     };
-    const PLineD PLineDDefault = {3,36,150,15,30.0,5,600,100,400,5.0,10,false,5.0,false};
+    const PLineD PLineDDefault = {3,36,150,15,30.0,5,600,400,100,5.0,10,false,5.0,false};
 
     struct Image_processing_node{
         bool debug;
@@ -45,6 +46,28 @@ namespace settings{
         bool press_to_continue;
     };
     const Image_processing_node Image_processing_node_Default = {false,true,true,false};
+
+    struct Vannishing_Point_Filter{
+        bool debug;
+        uint max_cluster_error;
+        uint min_cluster_error;
+    };
+    const Vannishing_Point_Filter Vannishing_Point_Filter_Default = {false, 300, 50};
+
+    struct Proximity_Filter{
+        bool debug;
+    };
+    const Proximity_Filter Proximity_Filter_Default = {false};
+
+    struct Camera{
+        uint pixel_width;
+        uint pixel_height;
+        double Chip_size_mm;
+        double focal_length_mm;
+        double FOV_deg;
+    };
+    const Camera Camera_Default = {1280,720,0,0,60};
+
 }
 
 
