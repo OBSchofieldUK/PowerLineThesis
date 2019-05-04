@@ -63,10 +63,13 @@ namespace settings{
         uint pixel_width;
         uint pixel_height;
         double Chip_size_mm;
+        double Chip_size_x;
+        double Chip_size_y;
         double focal_length_mm;
-        double FOV_deg;
+        double d;
+        double FOV;
     };
-    const Camera Camera_Default = {1280,720,0,0,60};
+    const Camera Camera_Default = {1280,720,0,0,0,0,0,60};
 
 }
 

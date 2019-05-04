@@ -23,6 +23,9 @@
 #include <inspec_lib/RosConverters.hpp>
 #include <inspec_lib/CoordinateConverters.hpp>
 
+#include <inspec_lib/settings/ReadSettings.hpp>
+#include <inspec_lib/settings/SettingStructs.hpp>
+
 #define MAX_UNOBSERVED_STATES_BEFORE_DELETION 4ul
 #define MIN_OBSERVATION_TOO_BEE_TRUSTED 4ul
 #define MAX_UNOBSERVED_STATES_BEFORE_DELETION_UNTRUSTED_LINE 1ul
@@ -71,6 +74,8 @@ struct lineEstimate{
     size_t consecutiveObservations;
     size_t observations;
 };
+
+settings::Camera setting_camera;
 
 // #### ROS Variables #####
 ros::Subscriber line_sub;
@@ -415,12 +420,14 @@ void position_handler(inspec_msg::position msg){
 int main(int argc, char* argv[]){
     ros::init(argc,argv,"estimator3d");
     ros::NodeHandle nh = ros::NodeHandle();
+
+    settings::read(setting_camera);
  
-    currentCam.pixel.x = 1920;
-    currentCam.pixel.y = 1080;
-    currentCam.d = 0.021;
-    currentCam.size.x = tan(M_PI*60/180)*currentCam.d;
-    currentCam.size.y = currentCam.size.x*(currentCam.pixel.y/currentCam.pixel.x);
+    currentCam.pixel.x = setting_camera.pixel_width;
+    currentCam.pixel.y = setting_camera.pixel_height;
+    currentCam.d = setting_camera.d;
+    currentCam.size.x = setting_camera.Chip_size_x;
+    currentCam.size.y = setting_camera.Chip_size_y;
 
     // Initialize constatn Matrix;
     X_hat_initial_guess << 0,0,5,0,0,0,0;

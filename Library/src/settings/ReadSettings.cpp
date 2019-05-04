@@ -293,6 +293,74 @@ namespace settings{
         }
     }
     void read(Proximity_Filter &dst){
+        
+    }
 
+    void read(Camera &dst){
+        rapidjson::Document doc = readFile();
+        dst = Camera_Default;
+        if(doc.HasMember("Camera")){
+            const rapidjson::Value& obj = doc["Camera"];
+            if(obj.HasMember("Pixel width")){
+                dst.pixel_width = obj["Pixel width"].GetUint();
+            }
+            if(obj.HasMember("Pixel height")){
+                dst.pixel_height = obj["Pixel height"].GetUint();
+            }
+            if(obj.HasMember("Chip size(mm)")){
+                dst.Chip_size_mm = obj["Chip size(mm)"].GetDouble();
+                double angle = atan(dst.pixel_height/dst.pixel_width);
+                dst.Chip_size_x = cos(angle)*dst.Chip_size_mm/1000;
+                dst.Chip_size_y = sin(angle)*dst.Chip_size_mm/1000;
+            }
+            if(obj.HasMember("Focal length(mm)")){
+                dst.focal_length_mm = obj["Focal length(mm)"].GetDouble();
+                dst.d = dst.focal_length_mm/1000;
+            }
+            if(obj.HasMember("FOV")){
+                dst.FOV = obj["FOV"].GetDouble(); 
+            }
+        }else{
+            rapidjson::Value Object(rapidjson::kObjectType);
+
+            rapidjson::Value pw(Camera_Default.pixel_width);
+            rapidjson::Value ph(Camera_Default.pixel_height);
+            rapidjson::Value fov(Camera_Default.FOV);
+            rapidjson::Value cs(Camera_Default.Chip_size_mm);
+            rapidjson::Value fl(Camera_Default.focal_length_mm);
+
+            Object.AddMember("Pixel width",pw,doc.GetAllocator());
+            Object.AddMember("Pixel height",ph,doc.GetAllocator());
+            Object.AddMember("Chip size(mm)",cs,doc.GetAllocator());
+            Object.AddMember("Focal length(mm)",fl,doc.GetAllocator());
+            Object.AddMember("FOV",fov,doc.GetAllocator());
+
+            doc.AddMember("Camera",Object,doc.GetAllocator());
+            saveFile(doc);
+
+        }
+        if(dst.Chip_size_mm <1 && dst.focal_length_mm < 1 && dst.FOV < 1){ // ALL missing
+            std::cerr << "Not Enough Camera Settings plese specify eiterh FOV or ChipSize and focal Length" << std::endl;
+            throw "ERROR";
+        }else if(dst.Chip_size_mm < 1 && dst.focal_length_mm < 1 && dst.FOV > 1){ // Only FOV
+            dst.focal_length_mm = 21;
+            dst.d = dst.focal_length_mm/1000;
+            dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d;
+            dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/dst.pixel_width);
+
+        }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm < 1 && dst.FOV > 1){ // FOV and chip size
+            dst.d = dst.Chip_size_x/tan(M_PI*(dst.FOV/2)/180);
+
+        }else if(dst.Chip_size_mm < 1 && dst.focal_length_mm > 1 && dst.FOV > 1){ // FOV and Focal length
+            dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d;
+            dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/dst.pixel_width);
+
+        }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm > 1 && dst.FOV < 1){ // Chip size and Focal length
+            dst.FOV = (atan(dst.Chip_size_x/dst.d)/M_PI)*2*180;
+        }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm > 1 && dst.FOV > 1){ // GOT Everything
+        }else{
+            std::cerr << "Not Sure what went wrong with the camera settings" << std::endl;
+            throw "ERROR";
+        }
     }
 }

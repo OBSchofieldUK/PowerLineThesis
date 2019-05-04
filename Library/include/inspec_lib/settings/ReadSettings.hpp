@@ -6,6 +6,7 @@
 #include <string>
 #include <streambuf>
 #include <cstdio>
+#include <math.h>
 
 #include "SettingStructs.hpp"
 
@@ -22,6 +23,7 @@ namespace settings{
     void read(PLineD &dst);
     void read(Image_processing_node &dst);
     void read(Proximity_Filter &dst);
+    void read(Camera &dst);
 
     rapidjson::Document readFile(void);
     void saveFile(rapidjson::Document &doc);
