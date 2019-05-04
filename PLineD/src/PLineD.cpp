@@ -1,5 +1,6 @@
 #include "PLineD.hpp"
 #include <math.h>
+#include <string>
 
 cv::RNG rng(cv::getTickCount());
 namespace {
@@ -7,6 +8,12 @@ struct lineSeg_less_than_key{
     inline bool operator() (const std::vector<cv::Point>& struct1, const std::vector<cv::Point>& struct2)
     {
         return (struct1.size() > struct2.size());
+    }
+    void ShowImage(const std::string &name, const cv::Mat &img, int x = 50, int y = 50 ){
+        cv::namedWindow(name,cv::WINDOW_NORMAL);
+        cv::moveWindow(name,x,y);
+        cv::resizeWindow(name, 600,500);
+
     }
 };
 double diffAngle(std::vector<cv::Point> vec1, std::vector<cv::Point> vec2){
@@ -17,16 +24,25 @@ double diffAngle(std::vector<cv::Point> vec1, std::vector<cv::Point> vec2){
     return A;
 }
 cv::Mat calcVecCovar(const std::vector<cv::Point> &inRow){
-    double varXY, varXX, varYY =0;
+    double varXY=0, varXX= 0, varYY =0;
     cv::Mat coVarMatx = cv::Mat(2,2,CV_64F);
-    for (size_t i = 0; i < inRow.size(); i++) {
-        varXX += (inRow[i].x * inRow[i].x);
-        varXY += (inRow[i].x * inRow[i].y);
-        varYY += (inRow[i].y * inRow[i].y);
+
+    double meanX = 0, meanY = 0;
+    for (size_t i = 0; i < inRow.size(); i++){
+        meanX += inRow[i].x;
+        meanY += inRow[i].y;
     }
-    varXX /= inRow.size();
-    varXY /= inRow.size();
-    varYY /= inRow.size();
+    meanX /= inRow.size();
+    meanY /= inRow.size();
+    
+    for (size_t i = 0; i < inRow.size(); i++) {
+        varXX += ((inRow[i].x-meanX) * (inRow[i].x-meanX));
+        varXY += ((inRow[i].x-meanX) * (inRow[i].y-meanY));
+        varYY += ((inRow[i].y-meanY) * (inRow[i].y-meanY));
+    }
+    varXX /= inRow.size()-1;
+    varXY /= inRow.size()-1;
+    varYY /= inRow.size()-1;
     coVarMatx.at<double>(0,0) = varXX;
     coVarMatx.at<double>(0,1) = varXY;
     coVarMatx.at<double>(1,0) = varXY;
@@ -60,7 +76,7 @@ void cutSeg(const lineSeg &src,lineSeg &dst,const size_t minLen ,double angle,co
                     A = acos(V1.dot(V2)  /  (sqrt(   V1.dot(V1)   )*sqrt(  V2.dot(V2)  )));
                     if(A>angle){
                         last = z;
-                        if(dst.back().size() == 1) dst.pop_back();
+                        if(dst.back().size() < minLen) dst.pop_back();
                         dst.push_back(std::vector<cv::Point>());
 
                     }
@@ -76,17 +92,20 @@ void contoursCanny(const cv::Mat &src,lineSeg &contours,uint8_t kernel_size,uint
     Canny(img, img, low_treshold, high_treshold, kernel_size);
     findContours( img, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE, cv::Point(0, 0) );
 }
-void printContours(cv::Mat &dst, const lineSeg &contours){
-    for( size_t i = 0; i< contours.size(); i++ ){
-        cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-        for( size_t z = 0; z < contours[i].size(); z++ ){
-            cv::Point p = contours[i][z];
+void printContour(cv::Mat &dst, const std::vector< cv::Point> &contour, cv::Scalar color){
+    for( size_t z = 0; z < contour.size(); z++ ){
+            cv::Point p = contour[z];
             if(p.x >= 0 && p.x < dst.cols && p.y>=0 && p.y <dst.rows){
-                dst.at<cv::Vec3b>(contours[i][z]) = {uchar(color[0]), uchar(color[1]), uchar(color[2])};
+                dst.at<cv::Vec3b>(contour[z]) = {uchar(color[0]), uchar(color[1]), uchar(color[2])};
             }else{
                 std::cerr << "Index out of bounds: P(" << p.x << ", " << p.y << ") - Bounds(" << dst.cols << ", " << dst.rows << ")" << std::endl;
             }
         }
+}
+void printContours(cv::Mat &dst, const lineSeg &contours){
+    for( size_t i = 0; i< contours.size(); i++ ){
+        cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+        printContour(dst,contours[i],color);
     }
 }
 void drawPoints(cv::Mat &dst,const std::vector<cv::Point> &pointList, const cv::Scalar color){
@@ -137,21 +156,18 @@ void groupSeg(lineSeg src, lineSeg &dst,std::vector<cv::Point> &dst_angels,const
 void segCov(const lineSeg &cutS,lineSeg &reducedSeg, int ratio){
     for (size_t i = 0; i < cutS.size(); i++) {
         cv::Mat COV, eigenVals;
-        if (cutS[i].size() > 1){
+        if (cutS[i].size() > 1){  
             COV = calcVecCovar(cutS[i]);
             cv::eigen(COV, eigenVals);
             double lambda1 = eigenVals.at<double>(0,0);
             double lambda2 = eigenVals.at<double>(0,1);
-
-            if ((lambda1/lambda2) < ratio ){
+            if ((lambda1/lambda2) > ratio ){
                 reducedSeg.push_back(cutS[i]);
             }
         }
-        else{
-        }
     }
 }
-void parallelSeg(const lineSeg &inPts, const std::vector<cv::Point> anglePts, lineSeg &paraSegments, double tAngle, size_t minPPL){
+void parallelSeg(const lineSeg &inPts, const std::vector<cv::Point> &anglePts, lineSeg &paraSegments, double tAngle, size_t minPPL){
     lineSeg tmpSegments;
     for (size_t i = 0; i < inPts.size(); i++) {
     // cout << i << ": " << endl << endl;
