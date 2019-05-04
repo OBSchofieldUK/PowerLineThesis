@@ -144,6 +144,7 @@ include_directories( include
 ## The recommended prefix ensures that target names across packages don't collide
 
 add_executable(airsim_img_node src/airsim_images_main.cpp)
+add_executable(stream_capture_node src/StreamCapture.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -161,6 +162,11 @@ target_link_libraries(airsim_img_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
    ${ROBWORK_LIBRARIES}
+)
+
+target_link_libraries(stream_capture_node
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBS}
 )
 
 #############
