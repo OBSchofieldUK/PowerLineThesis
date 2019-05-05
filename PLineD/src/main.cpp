@@ -30,8 +30,7 @@
 #define MATCHER_LINE_MAX_ERROR 30
 #define MATCHER_NO_MATCH_COST 30
 
-#define DEBUG_PLINED false
-#define DEBUG_PROXIMITY_FILTER_ false
+#define DEBUG_PROXIMITY_FILTER_ true
 
 
 using namespace std;
@@ -117,7 +116,7 @@ lineSeg PLineD_full(cv::Mat &src){
     }
     //
     //Show Results
-    if(DEBUG_PLINED){
+    if(setting_PLineD.debug){
         cv::Mat out1(src_gray.rows, src_gray.cols, CV_8UC3, cv::Scalar(0,0,0));
         cv::Mat out2(src_gray.rows, src_gray.cols, CV_8UC3, cv::Scalar(0,0,0));
         cv::Mat out3(src_gray.rows, src_gray.cols, CV_8UC3, cv::Scalar(0,0,0));
@@ -223,11 +222,13 @@ int main(int argc, char* argv[]){
     ros::init(argc,argv,"plined");
     nh = new ros::NodeHandle();
     estimate_sub = nh->subscribe("/Estimator/lines2d",1,estimate_handler);
-    image_sub = nh->subscribe("/webcam/image_raw",300,image_handler);
+    image_sub = nh->subscribe("/webcam/image_raw",1,image_handler);
     line_pub = nh->advertise<inspec_msg::line2d_array>("/linedetector/lines2d",1);
     
     settings::read(setting_node);
     settings::read(setting_PLineD);
+    cout << "PLineD debug: " << setting_PLineD.debug << endl;
+
 
     // ############## Setup Output windows ##############
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
@@ -290,14 +291,14 @@ int main(int argc, char* argv[]){
         }
         syncEstimateLines();
         // ############# Thickness Est ###############################
-        ThickEst::vvi pLines;
+        /*ThickEst::vvi pLines;
         ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
         //ThickEst::print(pLines);
         ThickEst::vpf lineThick;
         ThickEst::findThickness(pLines,lineThick);
         mathLine Thickness = math::leastSquareRegression(lineThick,img.size(),false);
-        //cout << Thickness << endl;
-        //ThickEst::print(pLines);
+        cout << Thickness << endl;
+        //ThickEst::print(pLines);*/
         // ############# Vannishing point Filter #####################
         if(setting_node.debug) cout << "Doing Vanishing point Filter" << endl;
 
