@@ -264,6 +264,7 @@ int main(int argc, char* argv[]){
         while(!gotImage && ros::ok()){
             ros::spinOnce();
         }
+        if(!ros::ok()) break;
         loop_num++;
         // ############# Pline D #####################################
         if(setting_node.debug) {
