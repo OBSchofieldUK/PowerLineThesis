@@ -141,6 +141,10 @@ namespace Prox{
                                     
                                     dontConsider[largest.second];
                                     gather.push_back(largest);
+                                }else if(DEBUG_PROXIMITY_FILTER){
+                                    bool isExt = isExtensionLine(B1,B2,l1,dist);
+                                    std::cout << "    is Extension: " << isExt <<  std::endl;
+                                    std::cout << "    d:            " << dist << std::endl;
                                 }
                             } 
                         }
