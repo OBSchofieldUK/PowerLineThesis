@@ -1,0 +1,3 @@
+<launch>
+   <node name="lidar_matcher" pkg="lidar_matcher" type="lidar_matcher_node" output="screen"/>
+</launch>
