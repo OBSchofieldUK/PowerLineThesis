@@ -42,7 +42,6 @@ namespace settings{
         bool debug;
         bool show_incomming_image;
         bool show_final_image;
-
         bool press_to_continue;
     };
     const Image_processing_node Image_processing_node_Default = {false,true,true,false};
@@ -70,6 +69,18 @@ namespace settings{
         double FOV;
     };
     const Camera Camera_Default = {1280,720,0,0,0,0,0,60};
+
+    struct Kalman_LineXmove{
+        bool debug;
+    };
+    const Kalman_LineXmove Kalman_LineXmove_Default = {false};
+
+    struct Lidar_matcher{
+        bool debug;
+        double RPY_camTlidar[3];
+        double XYZ_camTlidar[3];
+    };
+    const Lidar_matcher Lidar_matcher_Default = {false,{0,0,0},{0,0,5}};
 
 }
 

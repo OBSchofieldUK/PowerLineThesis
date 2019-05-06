@@ -121,7 +121,6 @@ namespace settings{
             saveFile(doc); 
         }
     }
-
     void read(Image_processing_node &dst){
         rapidjson::Document doc = readFile();
         dst = Image_processing_node_Default;
@@ -161,7 +160,6 @@ namespace settings{
             saveFile(doc);
         }
     }
-
     void read(PLineD &dst){
         rapidjson::Document doc = readFile();
         dst= PLineDDefault;
@@ -292,10 +290,8 @@ namespace settings{
             saveFile(doc);
         }
     }
-    void read(Proximity_Filter &dst){
-        
+    void read(Proximity_Filter &dst){   
     }
-
     void read(Camera &dst){
         rapidjson::Document doc = readFile();
         dst = Camera_Default;
@@ -345,22 +341,82 @@ namespace settings{
         }else if(dst.Chip_size_mm < 1 && dst.focal_length_mm < 1 && dst.FOV > 1){ // Only FOV
             dst.focal_length_mm = 21;
             dst.d = dst.focal_length_mm/1000;
-            dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d;
+            dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d*2;
             dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/dst.pixel_width);
 
         }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm < 1 && dst.FOV > 1){ // FOV and chip size
-            dst.d = dst.Chip_size_x/tan(M_PI*(dst.FOV/2)/180);
+            dst.d = dst.Chip_size_x/( tan(M_PI*(dst.FOV/2)/180) * 2);
 
         }else if(dst.Chip_size_mm < 1 && dst.focal_length_mm > 1 && dst.FOV > 1){ // FOV and Focal length
-            dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d;
+            dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d *2;
             dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/dst.pixel_width);
 
         }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm > 1 && dst.FOV < 1){ // Chip size and Focal length
-            dst.FOV = (atan(dst.Chip_size_x/dst.d)/M_PI)*2*180;
+            dst.FOV = (atan(dst.Chip_size_x/(dst.d *2))/M_PI)*2*180;
         }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm > 1 && dst.FOV > 1){ // GOT Everything
         }else{
             std::cerr << "Not Sure what went wrong with the camera settings" << std::endl;
             throw "ERROR";
+        }
+    }
+    void read(Kalman_LineXmove &dst){
+        dst = Kalman_LineXmove_Default;
+    }
+    void read(Lidar_matcher &dst){
+        rapidjson::Document doc = readFile();
+        dst = Lidar_matcher_Default;
+        if(doc.HasMember("Lidar matcher")){
+            const rapidjson::Value& obj = doc["Lidar matcher"];
+            if(obj.HasMember("Debug")){
+                dst.debug = obj["Debug"].GetBool();
+            }
+            if(obj.HasMember("Lidar Position")){
+                const rapidjson::Value& obj2 = obj["Lidar Position"];
+                if(obj2.HasMember("X")){
+                    dst.XYZ_camTlidar[0] = obj2["X"].GetDouble();
+                }
+                if(obj2.HasMember("Y")){
+                    dst.XYZ_camTlidar[1] = obj2["Y"].GetDouble();
+                }
+                if(obj2.HasMember("Z")){
+                    dst.XYZ_camTlidar[2] = obj2["Z"].GetDouble();
+                }
+                if(obj2.HasMember("Roll")){
+                    dst.RPY_camTlidar[0] = obj2["Roll"].GetDouble();
+                }
+                if(obj2.HasMember("Pitch")){
+                    dst.RPY_camTlidar[1] = obj2["Pitch"].GetDouble();
+                }
+                if(obj2.HasMember("Yaw")){
+                    dst.RPY_camTlidar[2] = obj2["Yaw"].GetDouble();
+                }
+            }
+
+        }else{
+            rapidjson::Value Object(rapidjson::kObjectType);
+            
+            rapidjson::Value debug(Lidar_matcher_Default.debug);
+            rapidjson::Value pos(rapidjson::kObjectType);
+            rapidjson::Value x(Lidar_matcher_Default.XYZ_camTlidar[0]);
+            rapidjson::Value y(Lidar_matcher_Default.XYZ_camTlidar[1]);
+            rapidjson::Value z(Lidar_matcher_Default.XYZ_camTlidar[2]);
+            rapidjson::Value roll(Lidar_matcher_Default.RPY_camTlidar[0]);
+            rapidjson::Value pitch(Lidar_matcher_Default.RPY_camTlidar[1]);
+            rapidjson::Value yaw(Lidar_matcher_Default.RPY_camTlidar[2]);
+
+            pos.AddMember("X",x,doc.GetAllocator());
+            pos.AddMember("Y",y,doc.GetAllocator());
+            pos.AddMember("Z",z,doc.GetAllocator());
+
+            pos.AddMember("Roll",roll,doc.GetAllocator());
+            pos.AddMember("Pitch",pitch,doc.GetAllocator());
+            pos.AddMember("Yaw",yaw,doc.GetAllocator());
+
+            Object.AddMember("Debug",debug,doc.GetAllocator());
+            Object.AddMember("Lidar Position",pos,doc.GetAllocator());
+            
+            doc.AddMember("Lidar matcher",Object,doc.GetAllocator());
+            saveFile(doc);
         }
     }
 }
