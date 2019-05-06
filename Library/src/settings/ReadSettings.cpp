@@ -429,5 +429,11 @@ namespace settings{
             doc.AddMember("Lidar matcher",Object,doc.GetAllocator());
             saveFile(doc);
         }
+
+        double min_angle = -dst.segment_H_angle*dst.number_of_segments/2 + dst.segment_H_angle/2;
+        for(uint i = 0; i < dst.number_of_segments; i ++){
+            dst.seg_angle.push_back(min_angle+dst.segment_H_angle*i);
+        }
+
     }
 }
