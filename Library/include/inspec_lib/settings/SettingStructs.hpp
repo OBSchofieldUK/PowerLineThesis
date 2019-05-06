@@ -2,7 +2,7 @@
 #define SETTING_STRUCTS_HPP_
 
 #include <string>
-#include <iostream>
+#include <vector>
 
 typedef unsigned char uchar;
 
@@ -81,6 +81,8 @@ namespace settings{
         uint number_of_segments;
         double segment_H_angle;
         double segment_V_angle;
+        std::vector<double> seg_angle;
+
     };
     const Lidar Lidar_matcher_Default = {{0,0,0},{0,0,5},8,48.0/8,0.3};
 

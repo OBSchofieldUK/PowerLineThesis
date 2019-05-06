@@ -1,4 +1,4 @@
-#include <inspec_lib/CoordinateConverters.hpp>
+#include <inspec_lib/converters/CoordinateConverters.hpp>
 
 namespace convert{
     rw::math::Vector3D<double> FRU2Image3D(rw::math::Vector3D<double> vec){

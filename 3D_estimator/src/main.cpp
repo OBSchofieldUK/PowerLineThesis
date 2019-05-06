@@ -20,8 +20,8 @@
 #include <inspec_msg/position.h>
 
 #include <inspec_lib/Math.hpp>
-#include <inspec_lib/RosConverters.hpp>
-#include <inspec_lib/CoordinateConverters.hpp>
+#include <inspec_lib/converters/RosConverters.hpp>
+#include <inspec_lib/converters/CoordinateConverters.hpp>
 
 #include <inspec_lib/settings/ReadSettings.hpp>
 #include <inspec_lib/settings/SettingStructs.hpp>

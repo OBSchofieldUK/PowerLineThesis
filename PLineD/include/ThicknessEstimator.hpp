@@ -9,7 +9,7 @@
 #include <vector>
 #include <deque>
 #include <inspec_lib/Math.hpp>
-#include <inspec_lib/CoordinateConverters.hpp>
+#include <inspec_lib/converters/CoordinateConverters.hpp>
 #include <opencv2/opencv.hpp>
 
 #include <math.h>

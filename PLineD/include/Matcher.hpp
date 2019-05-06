@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <inspec_lib/Math.hpp>
-#include <inspec_lib/RosConverters.hpp>
+#include <inspec_lib/converters/RosConverters.hpp>
 
 namespace Matcher{
     extern double LINE_MAX_ERROR;

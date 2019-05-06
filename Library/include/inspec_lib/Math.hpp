@@ -7,7 +7,7 @@
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <inspec_lib/CommonTypes.hpp>
-#include <inspec_lib/RosConverters.hpp>
+#include <inspec_lib/converters/RosConverters.hpp>
 #include <eigen3/Eigen/Dense>
 
 

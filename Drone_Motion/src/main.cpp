@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <inspec_msg/position.h>
-#include <inspec_lib/RosConverters.hpp>
+#include <inspec_lib/converters/RosConverters.hpp>
 #include <inspec_lib/Math.hpp>
 
 using namespace std;
