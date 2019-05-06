@@ -362,13 +362,19 @@ namespace settings{
     void read(Kalman_LineXmove &dst){
         dst = Kalman_LineXmove_Default;
     }
-    void read(Lidar_matcher &dst){
+    void read(Lidar &dst){
         rapidjson::Document doc = readFile();
         dst = Lidar_matcher_Default;
-        if(doc.HasMember("Lidar matcher")){
+        if(doc.HasMember("Lidar")){
             const rapidjson::Value& obj = doc["Lidar matcher"];
-            if(obj.HasMember("Debug")){
-                dst.debug = obj["Debug"].GetBool();
+            if(obj.HasMember("Number of Segments")){
+                dst.number_of_segments = obj["Number of Segments"].GetUint();
+            }
+            if(obj.HasMember("FOV vertical")){
+                dst.segment_V_angle = obj["Fov vertical"].GetDouble();
+            }
+            if(obj.HasMember("FOV horizontal")){
+                dst.segment_H_angle = obj["FOV horizontal"].GetDouble();
             }
             if(obj.HasMember("Lidar Position")){
                 const rapidjson::Value& obj2 = obj["Lidar Position"];
@@ -395,7 +401,10 @@ namespace settings{
         }else{
             rapidjson::Value Object(rapidjson::kObjectType);
             
-            rapidjson::Value debug(Lidar_matcher_Default.debug);
+            rapidjson::Value nos(Lidar_matcher_Default.number_of_segments);
+            rapidjson::Value fovv(Lidar_matcher_Default.segment_V_angle);
+            rapidjson::Value fovh(Lidar_matcher_Default.segment_H_angle);
+
             rapidjson::Value pos(rapidjson::kObjectType);
             rapidjson::Value x(Lidar_matcher_Default.XYZ_camTlidar[0]);
             rapidjson::Value y(Lidar_matcher_Default.XYZ_camTlidar[1]);
@@ -412,7 +421,9 @@ namespace settings{
             pos.AddMember("Pitch",pitch,doc.GetAllocator());
             pos.AddMember("Yaw",yaw,doc.GetAllocator());
 
-            Object.AddMember("Debug",debug,doc.GetAllocator());
+            Object.AddMember("Number of Segments",nos,doc.GetAllocator());
+            Object.AddMember("FOV vertical",fovv,doc.GetAllocator());
+            Object.AddMember("FOV horizontal",fovh,doc.GetAllocator());
             Object.AddMember("Lidar Position",pos,doc.GetAllocator());
             
             doc.AddMember("Lidar matcher",Object,doc.GetAllocator());

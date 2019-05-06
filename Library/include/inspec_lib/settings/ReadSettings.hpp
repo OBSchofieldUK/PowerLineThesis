@@ -25,7 +25,7 @@ namespace settings{
     void read(Proximity_Filter &dst);
     void read(Camera &dst);
     void read(Kalman_LineXmove &dst);
-    void read(Lidar_matcher &dst);
+    void read(Lidar &dst);
 
     rapidjson::Document readFile(void);
     void saveFile(rapidjson::Document &doc);

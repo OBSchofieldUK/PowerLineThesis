@@ -75,12 +75,14 @@ namespace settings{
     };
     const Kalman_LineXmove Kalman_LineXmove_Default = {false};
 
-    struct Lidar_matcher{
-        bool debug;
+    struct Lidar{
         double RPY_camTlidar[3];
         double XYZ_camTlidar[3];
+        uint number_of_segments;
+        double segment_H_angle;
+        double segment_V_angle;
     };
-    const Lidar_matcher Lidar_matcher_Default = {false,{0,0,0},{0,0,5}};
+    const Lidar Lidar_matcher_Default = {{0,0,0},{0,0,5},8,48.0/8,0.3};
 
 }
 
