@@ -43,10 +43,14 @@ ________________________________________________________________________________
 #include "ros/ros.h"
 
 #include <inspec_msg/lidardat.h>
+#include <inspec_msg/head.h>
+
 #include <std_msgs/Float64MultiArray.h>
 
 #define LEDDAR_DEV "/dev/ttyACM0"           //Location of LEDDAR VU8
 #define LEDDAR_MODBUS 1                     //Leave as 1!
+
+int count = 0;
 
 int main( int argc, char *argv[] )
 {
@@ -109,12 +113,19 @@ int main( int argc, char *argv[] )
                 Distances[idx] = (double) lEchoes[idx].mDistance / (double) lDistanceScale;
                 Amplitudes[idx] = (double) lEchoes[idx].mAmplitude / (double) lAmplitudeScale;
             }
-
+            
+            inspec_msg::head msgHead;
+            
+            msgHead.seq = count;
+            msgHead.stamp = ros::Time::now();
+            
+            msg.header = msgHead;
             msg.distance = Distances;
             msg.amplitude = Amplitudes;
 
             lResultEchoes->UnLock( LeddarConnection::B_GET );
             lidarPub.publish(msg);
+            count++;
 
         }
         ros::spinOnce();
