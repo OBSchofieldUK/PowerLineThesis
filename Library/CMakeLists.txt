@@ -51,8 +51,9 @@ include_directories(include
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/inspec_lib/Math.cpp
-  src/inspec_lib/RosConverters.cpp
-  src/inspec_lib/CoordinateConverters.cpp
+  src/converters/RosConverters.cpp
+  src/converters/CoordinateConverters.cpp
+  src/converters/OtherConverters.cpp 
   src/settings/ReadSettings.cpp
 )
 add_dependencies(${PROJECT_NAME} inspec_msg_generate_messages_cpp)
