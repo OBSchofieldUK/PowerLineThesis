@@ -2,8 +2,7 @@
 #include "inspec_lib/settings/SettingStructs.hpp"
 
 namespace{
-    std::string SplitFilename (const std::string& str)
-    {
+    std::string SplitFilename (const std::string& str){
         std::size_t found = str.find_last_of("/\\");
         std::string path = str.substr(0,found);
         return path;
@@ -22,7 +21,6 @@ namespace{
         return result;
     }
 }
-
 
 namespace settings{
     rapidjson::Document readFile(void){
@@ -366,12 +364,12 @@ namespace settings{
         rapidjson::Document doc = readFile();
         dst = Lidar_matcher_Default;
         if(doc.HasMember("Lidar")){
-            const rapidjson::Value& obj = doc["Lidar matcher"];
+            const rapidjson::Value& obj = doc["Lidar"];
             if(obj.HasMember("Number of Segments")){
                 dst.number_of_segments = obj["Number of Segments"].GetUint();
             }
             if(obj.HasMember("FOV vertical")){
-                dst.segment_V_angle = obj["Fov vertical"].GetDouble();
+                dst.segment_V_angle = obj["FOV vertical"].GetDouble();
             }
             if(obj.HasMember("FOV horizontal")){
                 dst.segment_H_angle = obj["FOV horizontal"].GetDouble();
@@ -426,7 +424,7 @@ namespace settings{
             Object.AddMember("FOV horizontal",fovh,doc.GetAllocator());
             Object.AddMember("Lidar Position",pos,doc.GetAllocator());
             
-            doc.AddMember("Lidar matcher",Object,doc.GetAllocator());
+            doc.AddMember("Lidar",Object,doc.GetAllocator());
             saveFile(doc);
         }
 
