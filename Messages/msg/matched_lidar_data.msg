@@ -1,4 +1,6 @@
 float64 distance
-float64 angle
+
+float64 x  # Position in image (centered coordinates)
+float64 y  # Position in image (centered coordinates)
+
 uint16 matched_line
-uint8  line_index  #Use this number if the line dosn't have an ID
