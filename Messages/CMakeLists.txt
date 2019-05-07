@@ -57,6 +57,7 @@ find_package(catkin REQUIRED
    lidardat.msg
    matched_lidar_data.msg
    matched_lidar_data_array.msg
+   line_control_info.msg
 )
 
 ## Generate services in the 'srv' folder
