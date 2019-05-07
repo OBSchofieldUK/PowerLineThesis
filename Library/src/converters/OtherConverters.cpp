@@ -7,9 +7,9 @@ namespace convert{
                                             XYZ[1],
                                             XYZ[2]),
                                         rw::math::RPY<double>(
-                                            RPY[0],
-                                            RPY[1],
-                                            RPY[2]
+                                            math::deg2rad(RPY[2]),
+                                            math::deg2rad(RPY[1]),
+                                            math::deg2rad(RPY[0])
                                         ).toRotation3D()
                                     );
     }
@@ -19,10 +19,10 @@ namespace convert{
                                             XYZ[1],
                                             XYZ[2]),
                                         rw::math::RPY<double>(
-                                            RPY[0],
-                                            RPY[1],
-                                            RPY[2]
-                                        ).toRotation3D()
+                                            math::deg2rad(RPY[2]),
+                                            math::deg2rad(RPY[1]),
+                                            math::deg2rad(RPY[0])
+                                        ).toRotation3D() //ROLL and Yaw are switched in RobWork
                                     );
     }
 }

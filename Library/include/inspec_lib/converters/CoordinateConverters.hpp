@@ -19,6 +19,7 @@ namespace convert{
     void img2realCoordOverride(cv::Point &src, const cv::Size &imgSize);
     cv::Point real2imgCoord(const cv::Point &src, const cv::Size &imgSize);
     void real2imgCoordOverride(cv::Point &src, const cv::Size &imgSize);
+    void real2imgCoordOverride(cv::Point2f &src, const cv::Size &imgSize);
     
 }
 #endif

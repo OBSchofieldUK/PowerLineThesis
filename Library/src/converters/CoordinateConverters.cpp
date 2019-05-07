@@ -34,5 +34,9 @@ namespace convert{
         src.x = src.x+imgSize.width/2;
         src.y = imgSize.height/2-src.y;
     }
+    void real2imgCoordOverride(cv::Point2f &src, const cv::Size &imgSize){
+        src.x = src.x+imgSize.width/2;
+        src.y = imgSize.height/2-src.y;
+    }
 }
 

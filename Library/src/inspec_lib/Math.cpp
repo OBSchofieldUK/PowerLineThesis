@@ -13,6 +13,25 @@ namespace math{
         }
         return line;
     }
+    mathLine2d constructMathLine(cv::Point2f p1, cv::Point2f p2, cv::Mat *img){
+        mathLine2d line;
+        line.a= (p1.y-p2.y) / (p1.x-p2.x);
+        line.b=p1.y-p1.x*line.a;
+
+        if(img!= NULL){
+            double y = line.a*img->cols/2+line.b;
+            line.a *= -1;
+            line.b = -(y-img->rows/2);
+        }
+        return line;
+    }
+    cv::Point2f intersection(mathLine2d l1, mathLine2d l2){
+        cv::Point2f p;
+        p.x = (l2.b-l1.b) / (l1.a-l2.a);
+        p.y = l1.a * p.x + l1.b;
+        return p;
+    }
+
     // ####################### CONVERTERS ################################
     
     double rad2deg(const double &angle){
@@ -113,7 +132,7 @@ namespace math{
         int x_max = dst.rows;
         int x_min = -1;
         for(int x = 0; x< dst.cols; x++){
-            double b = (-line.b+dst.rows/2)-(-line.a)*(dst.cols/2);
+            double b = (-line.b+dst.rows/2.0)-(-line.a)*(dst.cols/2.0);
             double a = -line.a;
             int y = a*x+b;
             if(y > 0 && y < dst.rows){

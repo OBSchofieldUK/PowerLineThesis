@@ -14,9 +14,10 @@
 namespace math{
     // ############### Constructers #################
     mathLine2d constructMathLine(cv::Point2f p, double angle,cv::Mat *img = NULL);
+    mathLine2d constructMathLine(cv::Point2f p1, cv::Point2f p2, cv::Mat *img = NULL);
+    cv::Point2f intersection(mathLine2d l1, mathLine2d l2);
 
     // ############### CONVERTERS ###################
-    
     double rad2deg(const double &angle);
     double deg2rad(const double &angle);
 

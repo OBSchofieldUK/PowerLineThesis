@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 typedef unsigned char uchar;
 
@@ -69,6 +70,7 @@ namespace settings{
         double FOV;
     };
     const Camera Camera_Default = {1280,720,0,0,0,0,0,60};
+    std::ostream& operator<<(std::ostream& os, const Camera& cam);
 
     struct Kalman_LineXmove{
         bool debug;
@@ -76,8 +78,8 @@ namespace settings{
     const Kalman_LineXmove Kalman_LineXmove_Default = {false};
 
     struct Lidar{
-        double RPY_camTlidar[3];
-        double XYZ_camTlidar[3];
+        double RPY_lidarTcam[3];
+        double XYZ_lidarTcam[3];
         uint number_of_segments;
         double segment_H_angle;
         double segment_V_angle;

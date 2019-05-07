@@ -303,13 +303,13 @@ namespace settings{
             }
             if(obj.HasMember("Chip size(mm)")){
                 dst.Chip_size_mm = obj["Chip size(mm)"].GetDouble();
-                double angle = atan(dst.pixel_height/dst.pixel_width);
-                dst.Chip_size_x = cos(angle)*dst.Chip_size_mm/1000;
-                dst.Chip_size_y = sin(angle)*dst.Chip_size_mm/1000;
+                double angle = atan(dst.pixel_height/double(dst.pixel_width));
+                dst.Chip_size_x = cos(angle)*dst.Chip_size_mm/1000.0;
+                dst.Chip_size_y = sin(angle)*dst.Chip_size_mm/1000.0;
             }
             if(obj.HasMember("Focal length(mm)")){
                 dst.focal_length_mm = obj["Focal length(mm)"].GetDouble();
-                dst.d = dst.focal_length_mm/1000;
+                dst.d = dst.focal_length_mm/1000.0;
             }
             if(obj.HasMember("FOV")){
                 dst.FOV = obj["FOV"].GetDouble(); 
@@ -340,7 +340,7 @@ namespace settings{
             dst.focal_length_mm = 21;
             dst.d = dst.focal_length_mm/1000;
             dst.Chip_size_x = tan(M_PI*(dst.FOV/2)/180)*dst.d*2;
-            dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/dst.pixel_width);
+            dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/double(dst.pixel_width));
 
         }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm < 1 && dst.FOV > 1){ // FOV and chip size
             dst.d = dst.Chip_size_x/( tan(M_PI*(dst.FOV/2)/180) * 2);
@@ -350,12 +350,13 @@ namespace settings{
             dst.Chip_size_y = dst.Chip_size_x*(dst.pixel_height/dst.pixel_width);
 
         }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm > 1 && dst.FOV < 1){ // Chip size and Focal length
-            dst.FOV = (atan(dst.Chip_size_x/(dst.d *2))/M_PI)*2*180;
+            dst.FOV = (atan(dst.Chip_size_x/(dst.d*2.0))/M_PI)*2*180;
         }else if(dst.Chip_size_mm > 1 && dst.focal_length_mm > 1 && dst.FOV > 1){ // GOT Everything
         }else{
             std::cerr << "Not Sure what went wrong with the camera settings" << std::endl;
             throw "ERROR";
         }
+        
     }
     void read(Kalman_LineXmove &dst){
         dst = Kalman_LineXmove_Default;
@@ -377,22 +378,22 @@ namespace settings{
             if(obj.HasMember("Lidar Position")){
                 const rapidjson::Value& obj2 = obj["Lidar Position"];
                 if(obj2.HasMember("X")){
-                    dst.XYZ_camTlidar[0] = obj2["X"].GetDouble();
+                    dst.XYZ_lidarTcam[0] = obj2["X"].GetDouble();
                 }
                 if(obj2.HasMember("Y")){
-                    dst.XYZ_camTlidar[1] = obj2["Y"].GetDouble();
+                    dst.XYZ_lidarTcam[1] = obj2["Y"].GetDouble();
                 }
                 if(obj2.HasMember("Z")){
-                    dst.XYZ_camTlidar[2] = obj2["Z"].GetDouble();
+                    dst.XYZ_lidarTcam[2] = obj2["Z"].GetDouble();
                 }
                 if(obj2.HasMember("Roll")){
-                    dst.RPY_camTlidar[0] = obj2["Roll"].GetDouble();
+                    dst.RPY_lidarTcam[0] = obj2["Roll"].GetDouble();
                 }
                 if(obj2.HasMember("Pitch")){
-                    dst.RPY_camTlidar[1] = obj2["Pitch"].GetDouble();
+                    dst.RPY_lidarTcam[1] = obj2["Pitch"].GetDouble();
                 }
                 if(obj2.HasMember("Yaw")){
-                    dst.RPY_camTlidar[2] = obj2["Yaw"].GetDouble();
+                    dst.RPY_lidarTcam[2] = obj2["Yaw"].GetDouble();
                 }
             }
 
@@ -404,12 +405,12 @@ namespace settings{
             rapidjson::Value fovh(Lidar_matcher_Default.segment_H_angle);
 
             rapidjson::Value pos(rapidjson::kObjectType);
-            rapidjson::Value x(Lidar_matcher_Default.XYZ_camTlidar[0]);
-            rapidjson::Value y(Lidar_matcher_Default.XYZ_camTlidar[1]);
-            rapidjson::Value z(Lidar_matcher_Default.XYZ_camTlidar[2]);
-            rapidjson::Value roll(Lidar_matcher_Default.RPY_camTlidar[0]);
-            rapidjson::Value pitch(Lidar_matcher_Default.RPY_camTlidar[1]);
-            rapidjson::Value yaw(Lidar_matcher_Default.RPY_camTlidar[2]);
+            rapidjson::Value x(Lidar_matcher_Default.XYZ_lidarTcam[0]);
+            rapidjson::Value y(Lidar_matcher_Default.XYZ_lidarTcam[1]);
+            rapidjson::Value z(Lidar_matcher_Default.XYZ_lidarTcam[2]);
+            rapidjson::Value roll(Lidar_matcher_Default.RPY_lidarTcam[0]);
+            rapidjson::Value pitch(Lidar_matcher_Default.RPY_lidarTcam[1]);
+            rapidjson::Value yaw(Lidar_matcher_Default.RPY_lidarTcam[2]);
 
             pos.AddMember("X",x,doc.GetAllocator());
             pos.AddMember("Y",y,doc.GetAllocator());
@@ -432,6 +433,16 @@ namespace settings{
         for(uint i = 0; i < dst.number_of_segments; i ++){
             dst.seg_angle.push_back(min_angle+dst.segment_H_angle*i);
         }
+
+    }
+
+
+    std::ostream& operator<<(std::ostream& os, const Camera& cam){
+        os << "###### Camera ######" << std::endl;
+        os << "Pixel: " << cam.pixel_width << " x " << cam.pixel_height << std::endl;
+        os << "Chip:  " << cam.Chip_size_x << " x " << cam.Chip_size_y << " - size: " << cam.Chip_size_mm << std::endl;
+        os << "d:     " << cam.d << std::endl;
+        os << "FOV:   " << cam.FOV << std::endl;
 
     }
 }
