@@ -9,12 +9,15 @@ import mavros.setpoint as mavSP
 import mavros_msgs.msg
 import mavros_msgs.srv
 
-from std_msgs.msg import String
+from std_msgs.msg import (String, Int8)
 
 mavros.set_namespace('mavros')
 
 onB_StateSub = '/onboard/state'
+targetWP = '/onboard/setpoint/loiter'
 
+
+keySub = '/gcs/keypress'
 class loiterPilot(): 
     def __init__(self):
         rospy.init_node('loiterPilot')
@@ -23,7 +26,10 @@ class loiterPilot():
         
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'),mavSP.PoseStamped, self.onPositionChange)
+
+        rospy.Subscriber(keySub, Int8, self._cb_onKeypress)
         
+        self.targetPub = rospy.Publisher
         self.loiterPub = mavSP.get_pub_position_local(queue_size=5)
 
         self.loiterPos = mavSP.PoseStamped()
@@ -36,6 +42,20 @@ class loiterPilot():
 
         topic.publish(msg)
         self.rate.sleep()
+
+    def _cb_onKeypress(self, msg):
+        keypress = str(chr(msg.data))
+        keypress.lower()
+        if keypress == 'w':
+            self.loiterPos.pose.position.x += 0.5 
+        if keypress == 'd':
+            self.loiterPos.pose.position.x -= 0.5
+        if keypress == 'w':
+            self.loiterPos.pose.position.y += 0.5
+        if keypress == 'z':
+            self.loiterPos.pose.position.z += 0.5 
+        if keypress == 'x':
+            self.loiterPos.pose.position.z -= 0.5
     
     def onStateChange(self, msg):
         if msg.data == 'loiter':
@@ -43,7 +63,8 @@ class loiterPilot():
             self.loiterPos = self.curPos
             self.enable = True
         else:
-            print('loiter disabled')
+            if self.enable:
+                print('loiter disabled')
             self.enable = False
         
     def onPositionChange(self,msg):

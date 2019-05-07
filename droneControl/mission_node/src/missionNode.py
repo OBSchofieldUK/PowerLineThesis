@@ -18,6 +18,8 @@ onB_StateSub    = '/onboard/state'
 pylonRequest    = '/onboard/pylonRequest'
 pylonListSub      = '/onboard/pylonList'
 
+targetWP = '/onboard/setpoint/mission'
+
 class missionPilot():
     def __init__(self):
         rospy.init_node('missionPilot')
@@ -27,7 +29,8 @@ class missionPilot():
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
         rospy.Subscriber(pylonListSub, pylonList, self.onPylonListUpdate)
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
-        
+        self.wpPub = rospy.Publisher(targetWP, NavSatFix, queue_size=1)
+
         self.towerRequest = rospy.Publisher(pylonRequest, Bool, queue_size=1)
 
         self.dronePos = NavSatFix()
@@ -35,8 +38,7 @@ class missionPilot():
         self.received = False
         self.pylonOffset = 25 # meters away from the power pylon 
 
-# ROS Subscribers
-
+    # ROS Subscribers
     def onStateChange(self, msg):
         if msg.data == 'mission':
             print ('mission Enable')
@@ -54,18 +56,23 @@ class missionPilot():
     def cb_onPosUpdate(self, msg):
         self.dronePos = msg
 
-    def findNearestPylon(self, refUTM): 
+    '''
+    Calculations for 
+        - finding nearest pylon to a reference point (input UTM Coords)
+    '''
+    def findNearestPylon(self, refUTM):
 
         nearestPylon = []
         closestDist = None
         pylonidx = -1
-        for i in range(0,len(self.pylonList)):
+        for i in range(0, len(self.pylonList)):
 
-            pylonPos = utm.from_latlon(self.pylonList[i].lat, self.pylonList[i].lon)
+            pylonPos = utm.from_latlon(
+                self.pylonList[i].lat, self.pylonList[i].lon)
             # deltaNorthing = utmDronePos[0] - pylonPos[0]
             # deltaEasting = utmDronePos[0] - pylonPos[0]
             # dist = math.sqrt(deltaNorthing**2 + deltaEasting**2)
-            _,_,dist = self.calcDist(refUTM, pylonPos)
+            _, _, dist = self.calcDist(refUTM, pylonPos)
             if dist > 0:
                 if closestDist == None:
                     closestDist = dist
@@ -75,7 +82,7 @@ class missionPilot():
                     closestDist = dist
                     nearestPylon = self.pylonList[i]
                     pylonidx = i
-        print ("Nearest Pylon is at:", nearestPylon, " Dist:", closestDist)
+        # print("Nearest Pylon is at:", nearestPylon, " Dist:", closestDist)
 
         return pylonidx, nearestPylon
 
@@ -100,10 +107,10 @@ class missionPilot():
         # print (orientation, offsetNorth, offsetEast)
         return orientation, offsetNorth, offsetEast
 
-# Mission Pilot
+    # Mission Pilot
     def navToPylon(self):
         self.towerRequest.publish(True)
-        print("requestSent")
+
         while not (self.received):
             self.rate.sleep()
         
@@ -116,7 +123,12 @@ class missionPilot():
             nxtWPAdjN = utmNxtWP[0] + wpOffN
             nxtWPAdjE = utmNxtWP[1] + wpOffE
             WPADJ = utm.to_latlon(nxtWPAdjN, nxtWPAdjE, utmNxtWP[2], utmNxtWP[3])
-
+            print("Waypoint to pylon is:", WPADJ)
+            wpTarget = NavSatFix()
+            wpTarget.latitude = WPADJ[0]
+            wpTarget.longitude = WPADJ[1]
+            wpTarget.altitude = 10.0
+            self.wpPub.publish(wpTarget)
         pass
 
     def runMission(self):
@@ -124,6 +136,9 @@ class missionPilot():
 
     def run(self):
         while not(rospy.is_shutdown()):
+            if self.enable:
+
+                pass
             self.rate.sleep()
         pass
 
