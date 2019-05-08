@@ -79,11 +79,13 @@ class keypress_node:
 			msg = Int8()
 			ch = self.getch()
 			msg.data = ord(ch)
-			self.keypress_pub.publish(msg)
 
-			if ch == 'q':
+			
+			if msg.data == 27: # esc
+				print("esc pressed!")
 				rospy.signal_shutdown('User quit')
-
+			else:
+				self.keypress_pub.publish(msg)
 			# sleep the defined interval
 			self.rate.sleep()
 

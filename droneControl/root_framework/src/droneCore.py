@@ -11,7 +11,7 @@ import mavros_msgs.msg
 import mavros_msgs.srv
 
 from geometry_msgs.msg import PoseStamped
-
+from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import (String, Int8)
 
 mavros.set_namespace('mavros')
@@ -21,6 +21,8 @@ mavros.set_namespace('mavros')
 onB_StateSub = '/onboard/state'
 keySub = '/gcs/keypress'
 
+linefollowsub = '/onboard/setpoint/linefollow'
+homePubTopic = '/onboard/position/home'
 class droneCore():
     def __init__(self):
         rospy.init_node('droneCMD_node')
@@ -30,13 +32,18 @@ class droneCore():
 
         rospy.Subscriber(mavros.get_topic('state'), mavros_msgs.msg.State, self._cb_uavState)
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPos)
+        rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self._cb_SatFix)
         rospy.Subscriber(keySub,Int8, self._cb_onKeypress)
+
         self.statePub = rospy.Publisher(onB_StateSub, String, queue_size=1)
         self.spLocalPub = mavSP.get_pub_position_local(queue_size=5)
-        
+        self.homePub = rospy.Publisher(homePubTopic, NavSatFix, queue_size=1)
+
         # Services 
         self.setMode = rospy.ServiceProxy('/mavros/set_mode', mavros_msgs.srv.SetMode)
         
+        self.homeCoord = None
+        self.gpsPos = NavSatFix()
         self.curPos = mavSP.PoseStamped()
         self.loiterPos = mavSP.PoseStamped()
 
@@ -77,7 +84,9 @@ class droneCore():
         self.curPos = msg
         # self.curPos = self._genPoseMsg(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)        
         pass
-    
+    def _cb_SatFix(self,msg):
+        self.gpsPos = msg
+
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
         keypress.lower()
@@ -85,20 +94,21 @@ class droneCore():
             self.droneTakeoff()
             self.droneLoiter()
         if keypress == 'l':
-            if not self.isAirbourne():
-                print "Warn: Not airbourne!"
+            if not self.isAirbourne:
+                print ("Warn: Not airbourne!")
             else:
-                self.droneLoiter
-                
+                self.droneLoiter()
+
         if keypress == 'm':
-            if not self.isAirbourne():
-                self.droneTakeoff():
+            if not self.isAirbourne:
+                self.droneTakeoff(3.0)
             self.missionEnable()
         
+        if keypress == 'h':
+            self.homeCoord = self.gpsPos
+            self.homePub.publish(self.homeCoord)
         
-
-
-    def droneTakeoff(self, alt=3.0):
+    def droneTakeoff(self, alt=1.0):
         if not self.droneArmed:
             mavCMD.arming(True)
 
@@ -107,6 +117,10 @@ class droneCore():
         # preArmMsgs = self._genPoseMsg(0,0,alt)
         for i in range(100):
             self._pubMsg(preArmMsgs, self.spLocalPub)
+        if self.homeCoord == None:
+            self.homeCoord = self.gpsPos
+            self.homePub.publish(self.homeCoord)
+            print("home updated")
 
         self.setMode(0,'OFFBOARD')
         self.setPoint = preArmMsgs
