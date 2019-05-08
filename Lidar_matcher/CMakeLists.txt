@@ -12,13 +12,10 @@ find_package(catkin REQUIRED
   std_msgs 
   inspec_msg
   inspec_lib
+  rw_lib
   )
 find_package(OpenCV REQUIRED)
 
-SET(RW_ROOT $ENV{RW_ROOT})
-SET(RobWork_DIR ${RW_ROOT}/cmake) 
-
-find_package(RobWork REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -44,8 +41,8 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
     std_msgs
+    rw_lib
     inspec_msg
-  DEPENDS RobWork
 )
 
 ###########
@@ -58,7 +55,6 @@ include_directories(
  include
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
- ${ROBWORK_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -73,7 +69,6 @@ add_executable(${PROJECT_NAME}_node
 target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
-   ${ROBWORK_LIBRARIES}
 )
 
 #############
