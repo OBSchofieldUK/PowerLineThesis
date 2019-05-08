@@ -7,5 +7,5 @@
 	<node pkg="root_framework" type="keypressNode.py" name="keypressNode"> </node>
 	<node pkg="pylon_locator" type="pylonNode.py" name="pylonNode" output="screen"></node>
 	<node pkg="mission_node" type="missionNode.py" name="missionNode" output="screen"></node>
-	s
+	<node pkg="root_framework" type="messageControl.py" name="messageControl" output="screen"></node>>
 </launch>

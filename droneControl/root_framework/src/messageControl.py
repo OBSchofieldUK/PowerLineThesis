@@ -33,13 +33,15 @@ class msgControl():
         # rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.cb_loiterMsg)
         rospy.Subscriber(missionSub, NavSatFix, self._cb_missionUpdate)
         rospy.Subscriber(homeSub, NavSatFix, self._cb_onHomeUpdate)
-        
+        rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
         # self.targetPub = rospy.Publisher
+
         self.setpointPub = mavSP.get_pub_position_local(queue_size=5)
         
         self.homePos = NavSatFix()
         self.enable = False
         self.setpoint = mavSP.PoseStamped()
+        self.curLocalPos = mavSP.PoseStamped()
 
     def _pubMsg(self, msg, topic):
         msg.header = mavros.setpoint.Header(
@@ -56,7 +58,16 @@ class msgControl():
         if msg.data == 'mission':
             self.enable = True
             pass
-        
+    
+    def _cb_localPosUpdate(self, msg):
+        self.curLocalPos = msg
+    
+    def _cb_onHomeUpdate(self, msg):
+        self.homePos = msg
+
+    def onPositionChange(self, msg):
+        self.curPos = msg
+    
     def _cb_missionUpdate(self, msg):
 
         x,y,z = self.gpsToLocal(msg)
@@ -64,14 +75,19 @@ class msgControl():
         self.setpoint.pose.position.y = x
         self.setpoint.pose.position.z = z
         
-        pass
             
-    def _cb_onHomeUpdate(self, msg):
-        self.homePos = msg
-
-
-    def onPositionChange(self, msg):
-        self.curPos = msg
+    def altitudeCheck(self):
+        preMsg = mavSP.PoseStamped()
+        if abs(self.curLocalPos.pose.position.z - self.setpoint.pose.position.z) > 0.5:
+            preMsg.pose.position.x = self.curLocalPos.pose.position.x
+            preMsg.pose.position.y = self.curLocalPos.pose.position.y
+            preMsg.pose.position.z = self.setpoint.pose.position.z
+        else:
+            preMsg.pose.position.x = self.setpoint.pose.position.x
+            preMsg.pose.position.y = self.setpoint.pose.position.y
+            preMsg.pose.position.z = self.setpoint.pose.position.z
+        
+        self._pubMsg(preMsg, self.setpointPub)
 
     def calcDist(self, utmPosA, utmPosB):
         dist = -1
@@ -94,7 +110,8 @@ class msgControl():
     def run(self):
         while not rospy.is_shutdown():
             if self.enable:
-                self._pubMsg(self.setpoint, self.setpointPub)
+                # self._pubMsg(self.setpoint, self.setpointPub)
+                self.altitudeCheck()
                 pass
                 # self._pubMsg(self.loiterPos, self.loiterPub)
             self.rate.sleep()
