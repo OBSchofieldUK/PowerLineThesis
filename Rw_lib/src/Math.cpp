@@ -15,7 +15,7 @@
  * limitations under the License.
  ********************************************************************************/
 
-#include "rw/Math.hpp"
+#include "rw/math/Math.hpp"
 //#include "MetricFactory.hpp"
 #include "rw/math/Random.hpp"
 #include <rw/common/macros.hpp>

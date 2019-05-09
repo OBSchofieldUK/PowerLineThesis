@@ -13,7 +13,8 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>opencv</build_depend>
-  <build_depend>roslib</build_depend> 
+  <build_depend>roslib</build_depend>
+  <build_depend>rw_lib </build_depend> 
 
 
   <run_depend>inspec_msg</run_depend>
@@ -22,6 +23,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>opencv</run_depend>
   <run_depend>roslib</run_depend>
+  <run_depend>rw_lib</run_depend>
 
   <export>
 

@@ -17,7 +17,7 @@
 
 
 #include "rw/math/Quaternion.hpp"
-#include "rw/Math.hpp"
+#include "rw/math/Math.hpp"
 #include <rw/common/InputArchive.hpp>
 #include <rw/common/OutputArchive.hpp>
 

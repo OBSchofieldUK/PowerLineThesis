@@ -27,10 +27,8 @@
 #include "rw/math/RPY.hpp"
 #include "rw/math/Quaternion.hpp"
 #include "rw/math/Transform3D.hpp"
-#include <math.h>
-#ifndef Pi
-#define Pi M_PI
-#endif
+#include "rw/math/Constants.hpp"
+
 
 namespace rw { namespace math {
 

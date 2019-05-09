@@ -22,7 +22,7 @@
 
 #include <rw/common/InputArchive.hpp>
 #include <rw/common/OutputArchive.hpp>
-#include "rw/Math.hpp"
+#include "rw/math/Math.hpp"
 
 using namespace rw::common;
 using namespace rw::math;

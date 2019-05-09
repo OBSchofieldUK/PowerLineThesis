@@ -9,12 +9,9 @@ find_package(catkin REQUIRED
   std_msgs 
   inspec_msg
   roslib
+  rw_lib
   )
 
-SET(RW_ROOT $ENV{RW_ROOT})
-SET(RobWork_DIR ${RW_ROOT}/cmake) 
-
-find_package(RobWork REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(RapidJSON REQUIRED)
 
@@ -30,8 +27,8 @@ catkin_package(
     std_msgs
     inspec_msg
     roslib
+    rw_lib
   DEPENDS 
-    ROBWORK
     OpenCV
 )
 
@@ -44,7 +41,6 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(include
   ${OpenCV_INCLUDE_DIRS}
-  ${ROBWORK_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -61,7 +57,6 @@ add_dependencies(${PROJECT_NAME} inspec_msg_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
-   ${ROBWORK_LIBRARIES}
    ${OpenCV_LIBS}
 )
 

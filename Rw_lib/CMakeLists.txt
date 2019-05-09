@@ -34,6 +34,7 @@ include_directories(include
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
+  src/EAA.cpp
   src/Exception.cpp 
   src/Extension.cpp 
   src/ExtensionRegistry.cpp
