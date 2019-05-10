@@ -13,6 +13,7 @@ using namespace std;
 
 ros::Publisher motion_pub;
 ros::Subscriber global_NED_sub;
+ros::Subscriber drone_local_sub;
 
 
 typedef rw::math::Vector3D<double> Vect;
@@ -43,6 +44,7 @@ int main(int argc, char* argv[]){
 
     motion_pub = nh.advertise<inspec_msg::position>("DroneInfo/Relative/Position",10);
     global_NED_sub = nh.subscribe("/DroneInfo/Position",10,NED_QUAT_Position_handler);
+    //drone_local_sub = nh.subscribe("/mavros/local_position/pose",1,);
 
     ros::spin();
     return 0;

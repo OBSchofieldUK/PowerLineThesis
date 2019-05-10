@@ -10,6 +10,8 @@
 #include <inspec_lib/converters/RosConverters.hpp>
 #include <eigen3/Eigen/Dense>
 
+#include <rw/math.hpp>
+
 
 namespace math{
     // ############### Constructers #################
@@ -32,11 +34,14 @@ namespace math{
     double distance(const cv::Point &p1, const cv::Point p2 = cv::Point(0,0));
     double distance(const cv::Point &p, const mathLine2d &l);
     double distance(const mathLine2d l, const cv::Point p);
+    double dot(const rw::math::Vector3D<double> v1,const rw::math::Vector3D<double> v2);
     
     // ################ DEBUG #######################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color = cv::Scalar(255,255,255),std::string text = "",cv::Scalar textColor = cv::Scalar(255,255,255));
     std::ostream& operator<<(std::ostream& os, const mathLine2d& dt);
     std::ostream& operator<<(std::ostream& os, const inspec_msg::line2d& dt);
+
+    
 }
 
 

@@ -68,8 +68,10 @@ namespace settings{
         double focal_length_mm;
         double d;
         double FOV;
+        double RPY_camTdrone[3];
+        double XYZ_camTdrone[3];
     };
-    const Camera Camera_Default = {1280,720,0,0,0,0,0,60};
+    const Camera Camera_Default = {1280,720,0,0,0,0,0,60,{0,0,0},{0,0,0}};
     std::ostream& operator<<(std::ostream& os, const Camera& cam);
 
     struct Kalman_LineXmove{

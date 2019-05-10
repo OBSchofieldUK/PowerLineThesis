@@ -18,6 +18,8 @@
 #include <inspec_msg/line3d.h>
 #include <inspec_msg/line3d_array.h>
 #include <inspec_msg/position.h>
+#include <inspec_msg/matched_lidar_data_array.h>
+#include <inspec_msg/matched_lidar_data.h>
 
 #include <inspec_lib/Math.hpp>
 #include <inspec_lib/converters/RosConverters.hpp>
@@ -78,6 +80,7 @@ struct lineEstimate{
 settings::Camera setting_camera;
 
 // #### ROS Variables #####
+ros::Subscriber lidar_sub;
 ros::Subscriber line_sub;
 ros::Subscriber position_sub;
 ros::Publisher  line_pub;
@@ -103,6 +106,7 @@ map<long,lineEstimate> ActiveLines;
 // #### Data Aquisition variables ####
 size_t image_seq;
 size_t position_seq;
+size_t lidar_seq;
 long max_line_id;
 rw::math::Vector3D<double> last_pos;
 rw::math::Quaternion<double> last_ori;
@@ -286,6 +290,24 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
     NormalizeLine(line3d);
     return line3d;
 }
+rw::math::Vector3D<double> pointOn3Dline(Vector7d line3D, point point2d, camera cam){
+    double Xs = cam.size.x/cam.pixel.x;
+    double Ys = cam.size.y/cam.pixel.y;
+
+    double c = (line3D[X0]*line3D[Z0]-point2d.x)*(Xs/cam.d);
+    double b = (line3D[X0]*line3D[dZ]+line3D[Z0]*line3D[dX])*(Xs/cam.d);
+    double a = (line3D[dX]*line3D[dZ])*(Xs/cam.d);
+
+    double tp = (-b + sqrt(b*b-4*a*c))/(2*a);
+    double tm = (-b - sqrt(b*b-4*a*c))/(2*a);
+    cout << "tp: " << tp << " - tm: " << tm << endl;
+
+    double t = tp;
+    rw::math::Vector3D<double> result;
+    for(uint i = 0; i < 3; i ++) result[i] = line3D[X0+i]+t*line3D[dX+i];
+    return result;
+
+}
 
 
 // ########################## ROS Helper Functions #################################
@@ -362,8 +384,30 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
 
 }
+void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_data &correction_data){ 
+
+}
 // ########################## ROS handlers ####################################
 
+void lidar_handler(inspec_msg::matched_lidar_data_array msg){
+    std::cout << "Lidar Data Recived: " << long(msg.header.seq) << endl;
+    if(msg.header.seq > lidar_seq){
+        lidar_seq = msg.header.seq;
+        inspec_msg::line3d_array return_msg;
+
+        for(uint i = 0; i < msg.data.size(); i++){
+
+            try{
+                lineEstimate &line = ActiveLines.at(size_t(msg.data[i].matched_line));
+                correctLineEstimate(line,msg.data[i]);
+                return_msg.lines.push_back(line2ros3D(line));
+            }catch(const std::out_of_range& oor) {
+                cout << "Lidar Matched powerline dosen't exsist" << endl;
+            }  
+        }
+        line_pub.publish(return_msg);
+    }
+}
 void line_handler(inspec_msg::line2d_array msg){   
     std::cout << "Image Data Recived: " << long(msg.header.seq) << endl;
     if(msg.header.seq > image_seq && msg.header.seq == position_seq){
@@ -443,7 +487,9 @@ int main(int argc, char* argv[]){
     Q = G*Sigma_u_diag*Sigma_u_diag.transpose()*G.transpose(); 
     // Initialize ROS publishers and Subscribers
     line_sub = nh.subscribe("/linedetector/lines2d",1,line_handler);
-    position_sub = nh.subscribe("DroneInfo/Relative/Position",10,position_handler);
+    position_sub = nh.subscribe("/DroneInfo/Relative/Position",1,position_handler);
+    lidar_sub = nh.subscribe("/lidarDat/Matched",1,lidar_handler);
+
     line_pub = nh.advertise<inspec_msg::line3d_array>("/Estimator/lines3d",10);
     line2Dest_pub = nh.advertise<inspec_msg::line2d_array>("/Estimator/lines2d",10);
     

@@ -127,6 +127,10 @@ namespace math{
 
         return std::abs(a*p.x+b*p.y+c)/std::sqrt(a*a+b*b);
     }
+
+    double dot(const rw::math::Vector3D<double> v1,const rw::math::Vector3D<double> v2){
+        return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
+    }
     // ######################## DEBUG #####################################
     void drawMathLine(cv::Mat &dst, mathLine2d line, cv::Scalar color,std::string text,cv::Scalar textColor){
         int x_max = dst.rows;
