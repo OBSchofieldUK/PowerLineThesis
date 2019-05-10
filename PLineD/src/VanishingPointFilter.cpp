@@ -5,19 +5,18 @@ namespace VP{
     settings::Vannishing_Point_Filter setting = settings::Vannishing_Point_Filter_Default;
 
     void filterLines(std::vector<math::mathLine2d> src,std::vector<math::mathLine2d> &dst,double min_point2line_error, double max_point_cluster_error){
-        std::vector<VPoint> VPs;
-        VP::calculateVanishingPoint(src,VPs);
-        if(VPs.size() < 5){
+
+        if(src.size() < 4){
             dst = src; 
             return;
         }
-        
+        std::vector<VPoint> VPs;
+        VP::calculateVanishingPoint(src,VPs);
         
         std::vector<std::vector<Cand>> CP(VPs.size());
         buildClusterData(VPs,CP);
 
         Cand result;
-        std::cout << "Finding Center "<< std::endl << std::flush;
         bool valid = findClusterCenter(CP,result,src.size(),max_point_cluster_error,min_point2line_error);
         if(valid){
             for(uint i = 0; i < src.size(); i++){
