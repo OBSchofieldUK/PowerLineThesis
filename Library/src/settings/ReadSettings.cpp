@@ -314,6 +314,27 @@ namespace settings{
             if(obj.HasMember("FOV")){
                 dst.FOV = obj["FOV"].GetDouble(); 
             }
+            if(obj.HasMember("Camera Position")){
+                const rapidjson::Value& obj2 = obj["Camera Position"];
+                if(obj2.HasMember("X")){
+                    dst.XYZ_camTdrone[0] = obj2["X"].GetDouble();
+                }
+                if(obj2.HasMember("Y")){
+                    dst.XYZ_camTdrone[1] = obj2["Y"].GetDouble();
+                }
+                if(obj2.HasMember("Z")){
+                    dst.XYZ_camTdrone[2] = obj2["Z"].GetDouble();
+                }
+                if(obj2.HasMember("Roll")){
+                    dst.RPY_camTdrone[0] = obj2["Roll"].GetDouble();
+                }
+                if(obj2.HasMember("Pitch")){
+                    dst.RPY_camTdrone[1] = obj2["Pitch"].GetDouble();
+                }
+                if(obj2.HasMember("Yaw")){
+                    dst.RPY_camTdrone[2] = obj2["Yaw"].GetDouble();
+                }
+            }
         }else{
             rapidjson::Value Object(rapidjson::kObjectType);
 
@@ -328,6 +349,23 @@ namespace settings{
             Object.AddMember("Chip size(mm)",cs,doc.GetAllocator());
             Object.AddMember("Focal length(mm)",fl,doc.GetAllocator());
             Object.AddMember("FOV",fov,doc.GetAllocator());
+
+            rapidjson::Value pos(rapidjson::kObjectType);
+            rapidjson::Value x(Camera_Default.XYZ_camTdrone[0]);
+            rapidjson::Value y(Camera_Default.XYZ_camTdrone[1]);
+            rapidjson::Value z(Camera_Default.XYZ_camTdrone[2]);
+            rapidjson::Value roll(Camera_Default.RPY_camTdrone[0]);
+            rapidjson::Value pitch(Camera_Default.RPY_camTdrone[1]);
+            rapidjson::Value yaw(Camera_Default.RPY_camTdrone[2]);
+
+            pos.AddMember("X",x,doc.GetAllocator());
+            pos.AddMember("Y",y,doc.GetAllocator());
+            pos.AddMember("Z",z,doc.GetAllocator());
+
+            pos.AddMember("Roll",roll,doc.GetAllocator());
+            pos.AddMember("Pitch",pitch,doc.GetAllocator());
+            pos.AddMember("Yaw",yaw,doc.GetAllocator());
+            Object.AddMember("Camera Position",pos,doc.GetAllocator());
 
             doc.AddMember("Camera",Object,doc.GetAllocator());
             saveFile(doc);
