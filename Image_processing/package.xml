@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>plined</name>
+  <name>image_processing</name>
   <version>0.0.0</version>
   <description>The Image analysis program</description>
   <maintainer email="kalor14@student.sdu.dk">Kasper Hoej lorenzen</maintainer>

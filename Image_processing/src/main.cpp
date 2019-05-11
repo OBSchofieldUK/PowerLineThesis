@@ -219,7 +219,7 @@ void syncEstimateLines(){
 //################ MAIN ##################################
 int main(int argc, char* argv[]){
     // ############## Start Ros ################
-    ros::init(argc,argv,"plined");
+    ros::init(argc,argv,"Image Processing");
     nh = new ros::NodeHandle();
     estimate_sub = nh->subscribe("/Estimator/lines2d",1,estimate_handler);
     image_sub = nh->subscribe("/webcam/image_raw",1,image_handler);
