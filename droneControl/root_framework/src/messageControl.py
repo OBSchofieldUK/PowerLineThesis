@@ -12,8 +12,9 @@ import mavros.command as mavCMD
 import mavros_msgs.msg
 import mavros_msgs.srv
 
-from std_msgs.msg import String
+from std_msgs.msg import (Bool, String)
 from sensor_msgs.msg import NavSatFix
+from inspec_msg.msg import line_control_info
 
 mavros.set_namespace('mavros')
 
@@ -21,6 +22,7 @@ onB_StateSub = '/onboard/state'
 
 loiterSub = '/onboard/setpoint/loiter'
 missionSub = '/onboard/setpoint/mission'
+inspectSub = '/onboard/setpoint/inspect'
 
 homeSub = '/onboard/position/home'
 
@@ -33,11 +35,12 @@ class msgControl():
         # rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.cb_loiterMsg)
         rospy.Subscriber(missionSub, NavSatFix, self._cb_missionUpdate)
         rospy.Subscriber(homeSub, NavSatFix, self._cb_onHomeUpdate)
+        rospy.Subscriber(inspectSub,line_control_info, self._onInspectPosUpdate)
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
         # self.targetPub = rospy.Publisher
 
         self.setpointPub = mavSP.get_pub_position_local(queue_size=5)
-        
+        self.wpCompletePub = rospy.Publisher('/onboard/check/WPSuccess', Bool, queue_size=1)
         self.homePos = NavSatFix()
         self.enable = False
         self.setpoint = mavSP.PoseStamped()
@@ -74,20 +77,41 @@ class msgControl():
         self.setpoint.pose.position.x = y
         self.setpoint.pose.position.y = x
         self.setpoint.pose.position.z = z
-        
-            
+
+    def _onInspectPosUpdate(self,msg):
+        # msg.dist_XY
+        # msg.dist_Z
+        # msg.yaw
+        pass
+    def waypointCheck(self):
+        altCheck, setPointPos = self.altitudeCheck()
+        proxCheck = self.proximityCheck()
+        print ("Alt: %r \t Prox: %r" % (altCheck, proxCheck))
+        self._pubMsg(setPointPos, self.setpointPub)
+        if proxCheck:
+            self.wpCompletePub.publish(True)
+
     def altitudeCheck(self):
         preMsg = mavSP.PoseStamped()
+        altCheck = False
         if abs(self.curLocalPos.pose.position.z - self.setpoint.pose.position.z) > 0.5:
             preMsg.pose.position.x = self.curLocalPos.pose.position.x
             preMsg.pose.position.y = self.curLocalPos.pose.position.y
             preMsg.pose.position.z = self.setpoint.pose.position.z
+            altCheck = False
         else:
             preMsg.pose.position.x = self.setpoint.pose.position.x
             preMsg.pose.position.y = self.setpoint.pose.position.y
             preMsg.pose.position.z = self.setpoint.pose.position.z
+            altCheck = True
         
-        self._pubMsg(preMsg, self.setpointPub)
+        return altCheck, preMsg
+
+    def proximityCheck(self):
+        if (abs(self.curLocalPos.pose.position.x - self.setpoint.pose.position.x) < 1.0) and (abs(self.curLocalPos.pose.position.y - self.setpoint.pose.position.y) < 1.0) :
+            return True             
+        else:
+            return False
 
     def calcDist(self, utmPosA, utmPosB):
         dist = -1
@@ -111,7 +135,7 @@ class msgControl():
         while not rospy.is_shutdown():
             if self.enable:
                 # self._pubMsg(self.setpoint, self.setpointPub)
-                self.altitudeCheck()
+                self.waypointCheck()
                 pass
                 # self._pubMsg(self.loiterPos, self.loiterPub)
             self.rate.sleep()
