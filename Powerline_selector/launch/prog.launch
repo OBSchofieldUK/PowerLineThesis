@@ -1,0 +1,3 @@
+<launch>
+   <node name="powerline_selector" pkg="powerline_selector" type="powerline_selector_node" output="screen" />
+</launch>

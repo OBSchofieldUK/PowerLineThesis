@@ -30,7 +30,7 @@
 #define MATCHER_LINE_MAX_ERROR 30
 #define MATCHER_NO_MATCH_COST 30
 
-#define DEBUG_PROXIMITY_FILTER_ true
+#define DEBUG_PROXIMITY_FILTER_ false
 
 
 using namespace std;
@@ -237,7 +237,7 @@ int main(int argc, char* argv[]){
     estimate_sub = nh->subscribe("/Estimator/lines2d",1,estimate_handler);
     image_sub = nh->subscribe("/webcam/image_raw",1,image_handler);
     line_pub = nh->advertise<inspec_msg::line2d_array>("/linedetector/lines2d",1);
-    gotImage_pub = nh->advertise<inspec_msg::head>("/linedetector/current_img",1);
+    gotImage_pub = nh->advertise<inspec_msg::head>("/linedetector/gotImage",1);
     
     settings::read(setting_node);
     settings::read(setting_PLineD);
@@ -306,7 +306,9 @@ int main(int argc, char* argv[]){
 
         // ############### Ready Data for Matching #######################
         for(uint i = 0; i < lines.size(); i++){
-            currentLines.push_back(math::leastSquareRegression(lines[i],img.size()));
+            mathLine l = math::leastSquareRegression(lines[i],img.size());
+            if(abs(l.a) < 2) // For Testing Indoor TODO
+                currentLines.push_back(l);
         }
         syncEstimateLines();
         // ############# Thickness Est ###############################
@@ -366,7 +368,7 @@ int main(int argc, char* argv[]){
                     }
                 }
             }
-            imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
+            //imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
 
             cv::imshow("PLineD",out);
         }

@@ -152,7 +152,7 @@ void Line_handler(inspec_msg::line2d_array msg){
     }
     
     cv::imshow("test",img);
-    cv::waitKey(0);
+    cv::waitKey(1);
 }
 void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::namedWindow(name,cv::WINDOW_NORMAL);

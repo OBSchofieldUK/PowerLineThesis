@@ -1,0 +1,3 @@
+<launch>
+   <node name="drone_motion" pkg="drone_motion" type="drone_motion_dummy_node" output="screen" />
+</launch>

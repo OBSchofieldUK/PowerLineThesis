@@ -167,12 +167,13 @@ namespace settings{
                 const rapidjson::Value& obj2 = obj["Canny"];
                 if(obj2.HasMember("Filter size")){
                     dst.canny_filter_size = obj2["Filter size"].GetUint();
+                    if(dst.canny_filter_size % 2 == 0) dst.canny_filter_size++;
                 }
-                if(obj2.HasMember("Treshold Low")){
-                    dst.canny_treshold_low = obj2["Treshold Low"].GetUint();
+                if(obj2.HasMember("Treshold low")){
+                    dst.canny_treshold_low = obj2["Treshold low"].GetUint();
                 }
-                if(obj2.HasMember("Treshold High")){
-                    dst.canny_treshold_high = obj2["Treshold High"].GetUint();
+                if(obj2.HasMember("Treshold high")){
+                    dst.canny_treshold_high = obj2["Treshold high"].GetUint();
                 }
             }
             if(obj.HasMember("Segment Cut")){

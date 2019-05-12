@@ -1,0 +1,3 @@
+<launch>
+   <node name="leddar_node" pkg="leddar_node" type="leddar_node" output="screen" />
+</launch>

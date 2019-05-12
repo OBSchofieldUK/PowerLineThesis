@@ -12,6 +12,10 @@
 
 #include <rw/math.hpp>
 
+#include <iostream>
+
+using namespace std;
+
 ros::Publisher powerline_position_pub;
 
 settings::Camera cam_setting;
@@ -50,13 +54,15 @@ inspec_msg::line_control_info controlInfo(const inspec_msg::line3d &line){
 }
 
 void powerline_handler(inspec_msg::line3d_array msg){
-    auto line = selector(msg);
-    auto info = controlInfo(line);
-    powerline_position_pub.publish(info);
+    if(!msg.lines.empty()){
+        auto line = selector(msg);
+        auto info = controlInfo(line);
+        powerline_position_pub.publish(info);
+    }
 }
 
 int main(int argc, char* argv[]){
-    ros::init(argc,argv,"powerline selector");
+    ros::init(argc,argv,"powerline_selector");
     ros::NodeHandle nh;
 
     settings::read(cam_setting);

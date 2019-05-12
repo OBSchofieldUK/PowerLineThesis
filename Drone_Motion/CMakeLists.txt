@@ -43,11 +43,15 @@ include_directories(
 link_directories( ${ROBWORK_LIBRARY_DIRS})
 
 add_executable(${PROJECT_NAME}_node src/main.cpp)
+add_executable(${PROJECT_NAME}_dummy_node src/dummy_spammer.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
    ${ROBWORK_LIBRARIES}
+)
+target_link_libraries(${PROJECT_NAME}_dummy_node
+   ${catkin_LIBRARIES}
 )
 
 #############
