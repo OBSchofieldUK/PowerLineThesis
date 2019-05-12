@@ -28,6 +28,7 @@ roslaunch image_processing prog.launch              #Find PowerLines
 roslaunch estimator3d prog.launch                   #Estimate 3D position of powerLines
 roslaunch drone_motion prog.launch                  #Calculate Relative Motion
 roslaunch powerline_selector prog.launch            #OutPut data of the data aquisition system
+roslaunch lidar_matcher Lidar.launch                #Starts Lidar
 
 ```
 # Rostopics
