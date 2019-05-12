@@ -43,13 +43,11 @@ void NED_QUAT_Position_handler(inspec_msg::position msg){
     wTs = wTe;
     motion_pub.publish(return_msg);
 }
-
 void onPositionUpdate(geometry_msgs::PoseStamped msg){
     // Pose -> position.x
     imgMsg.push_back(msg);
 
 }
-
 void onImgInput(inspec_msg::head inImg){
 
     double last_dif = inImg.stamp.toSec() - imgMsg.front().header.stamp.toSec();
@@ -79,16 +77,15 @@ void onImgInput(inspec_msg::head inImg){
     msgPos.Orientation_quat[3] = imgMsg.front().pose.orientation.z;
 
     NED_QUAT_Position_handler(msgPos);
-
-    }
+}
 int main(int argc, char* argv[]){
     ros::init(argc,argv,"drone_motion");
     ros::NodeHandle nh;
 
-    motion_pub = nh.advertise<inspec_msg::position>("DroneInfo/Relative/Position",10);
-    global_NED_sub = nh.subscribe("/DroneInfo/Position",10,NED_QUAT_Position_handler);
+    motion_pub = nh.advertise<inspec_msg::position>("/inspec/daq/DroneInfo/Relative/Position",10);
+    global_NED_sub = nh.subscribe("/inspec/daq/DroneInfo/Position",10,NED_QUAT_Position_handler);
     drone_local_sub = nh.subscribe("/mavros/local_position/pose",1, onPositionUpdate);
-    camImgSub = nh.subscribe("linedetection/gotImage",1,onImgInput);
+    camImgSub = nh.subscribe("/inspec/daq/linedetection/gotImage",1,onImgInput);
 
 
     ros::spin();
