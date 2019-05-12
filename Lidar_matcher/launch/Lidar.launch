@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find lidar_matcher)/launch/prog.launch" />
+    <include file="$(find leddar_node)/launch/prog.launch" />
+</launch>

@@ -20,10 +20,15 @@ The Project also depends on ROS. The implementation is tested to work on ros-kin
 When the Nodes are run for the first time a setting.json file is generated in the main directory where settings souch as the location of the Airsim recording folder can be found.
 
 ```bash
-roslaunch image_aquisition airsim_img.launch
-roslaunch plined prog.launch
-roslaunch estimator3d prog.launch
-roslaunch drone_motion prog.launch
+roslaunch image_aquisition airsim_img.launch        #Video From Airsim Recording
+ or
+roslaunch image_aquisition Webcam.launch video:=0   #Video from connected camera
+
+roslaunch image_processing prog.launch              #Find PowerLines
+roslaunch estimator3d prog.launch                   #Estimate 3D position of powerLines
+roslaunch drone_motion prog.launch                  #Calculate Relative Motion
+roslaunch powerline_selector prog.launch            #OutPut data of the data aquisition system
+
 ```
 # Rostopics
 The Rostopics used in the project 
