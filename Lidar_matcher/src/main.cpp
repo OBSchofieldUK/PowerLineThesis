@@ -179,7 +179,7 @@ int main(int argc, char **argv){
     ros::Subscriber lidar_data_sub = nh.subscribe("/inspec/daq/lidarDat",1,Lidar_data_handler);
     ros::Subscriber line_sub = nh.subscribe("/inspec/daq/linedetector/lines2d",1,Line_handler);
 
-    Matched_pub = nh.advertise<inspec_msg::matched_lidar_data_array>("/lidarDat/Matched",1);
+    Matched_pub = nh.advertise<inspec_msg::matched_lidar_data_array>("/inspec/daq/lidarDat/Matched",1);
 
     cv::Mat BLACK(camera_setting.pixel_height, camera_setting.pixel_width, CV_8UC3, cv::Scalar(0,0,0));
     ShowImage("test",BLACK);
