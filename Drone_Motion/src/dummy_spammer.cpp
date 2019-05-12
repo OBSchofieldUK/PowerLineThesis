@@ -25,8 +25,8 @@ int main(int argc, char* argv[]){
     ros::init(argc,argv,"drone_motion");
     ros::NodeHandle nh;
 
-    motion_pub = nh.advertise<inspec_msg::position>("DroneInfo/Relative/Position",10);
-    gotImage = nh.subscribe("/linedetector/gotImage",1,handler);
+    motion_pub = nh.advertise<inspec_msg::position>("/inspec/daq/DroneInfo/Relative/Position",10);
+    gotImage = nh.subscribe("/inspec/daq/linedetector/gotImage",1,handler);
 
     ros::spin();
     return 0;
