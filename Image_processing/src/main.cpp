@@ -37,6 +37,7 @@ using namespace std;
 
 settings::Image_processing_node setting_node;
 settings::PLineD setting_PLineD;
+settings::Camera setting_camera;
 
 typedef math::mathLine2d mathLine;
 
@@ -52,12 +53,14 @@ ros::NodeHandle* nh;
 ros::Subscriber estimate_sub;
 ros::Subscriber image_sub;
 ros::Publisher line_pub;
+ros::Publisher gotImage_pub;
 
 // ###### Node Variables #########
 cv::Mat img;
 vector<mathLine> currentLines;
 deque<inspec_msg::line2d_array> lineEstimates;
 size_t img_num;
+ros::Time image_time;
 size_t estimate_num;
 bool gotImage = false;
 
@@ -144,6 +147,8 @@ lineSeg PLineD_full(cv::Mat &src){
 void image_handler(sensor_msgs::Image msg){
     if(setting_node.debug) cout << "Image Num: " << msg.header.seq << endl;
     img_num = msg.header.seq;
+    image_time = msg.header.stamp;
+
     cv_bridge::CvImagePtr cv_ptr;
     try{
         cv_ptr = cv_bridge::toCvCopy(msg,"bgr8");
@@ -151,8 +156,10 @@ void image_handler(sensor_msgs::Image msg){
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    cv::resize(cv_ptr->image,img,cv::Size(1920,1080));      //Resize To 1920x1080
+    img = cv_ptr->image;
+    //cv::resize(cv_ptr->image,img,cv::Size(1920,1080));      //Resize To 1920x1080
     gotImage = true;
+
     if(setting_node.show_incomming_image) {
         cv::imshow("TestImage",img);
         cv::waitKey(1);
@@ -215,28 +222,37 @@ void syncEstimateLines(){
     }
     if(setting_node.debug) cout << "Estimated lines front is: " << lineEstimates.front().header.seq << endl;
 }
+void PublishGotImage(){
+    inspec_msg::head h;
+    h.seq = img_num;
+    h.stamp = image_time;
+    gotImage_pub.publish(h);
+}
 
 //################ MAIN ##################################
 int main(int argc, char* argv[]){
     // ############## Start Ros ################
-    ros::init(argc,argv,"Image Processing");
+    ros::init(argc,argv,"Image_Processing");
     nh = new ros::NodeHandle();
     estimate_sub = nh->subscribe("/Estimator/lines2d",1,estimate_handler);
     image_sub = nh->subscribe("/webcam/image_raw",1,image_handler);
     line_pub = nh->advertise<inspec_msg::line2d_array>("/linedetector/lines2d",1);
+    gotImage_pub = nh->advertise<inspec_msg::head>("/linedetector/current_img",1);
     
     settings::read(setting_node);
     settings::read(setting_PLineD);
+    settings::read(setting_camera);
+    cout << "Image_processing_debug: " << setting_node.debug << endl;
     cout << "PLineD debug: " << setting_PLineD.debug << endl;
 
 
     // ############## Setup Output windows ##############
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
     if(setting_PLineD.debug){
-        ShowImage("TestImage",BLACK ,10,10);
-        ShowImage("Conturs",BLACK,610,10);
-        ShowImage("SegCut",BLACK,1210,10);
-        ShowImage("CovFil",BLACK,10,610);
+        ShowImage("TestImage",BLACK ,20,20);
+        ShowImage("Conturs",BLACK,610,20);
+        ShowImage("SegCut",BLACK,1210,20);
+        ShowImage("CovFil",BLACK,20,610);
         ShowImage("GroupSeg",BLACK,610,610);
         if(setting_PLineD.Parrallel_active) ShowImage("ParLines",BLACK,1210,610);
         ShowImage("PLineD",BLACK,1210,610);
@@ -265,6 +281,8 @@ int main(int argc, char* argv[]){
             ros::spinOnce();
         }
         if(!ros::ok()) break;
+        PublishGotImage();
+
         loop_num++;
         // ############# Pline D #####################################
         if(setting_node.debug) {

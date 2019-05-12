@@ -1,3 +1,3 @@
 <launch>
-   <node name="plined" pkg="plined" type="plined_node" output="screen" />
+   <node name="image_processing" pkg="image_processing" type="image_processing_node" output="screen" />
 </launch>
