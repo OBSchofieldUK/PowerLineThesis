@@ -27,7 +27,7 @@ typedef rw::math::RPY<double> RPY;
 
 TransM wTs;
 
-deque<geometry_msgs::PoseStamped> imgMsg ;
+deque<geometry_msgs::PoseStamped> DronePosition ;
 
 void NED_QUAT_Position_handler(inspec_msg::position msg){
     msg.position[2] *= -1; //Invert z axis to go upwards instead of down
@@ -45,18 +45,18 @@ void NED_QUAT_Position_handler(inspec_msg::position msg){
 }
 void onPositionUpdate(geometry_msgs::PoseStamped msg){
     // Pose -> position.x
-    imgMsg.push_back(msg);
+    DronePosition.push_back(msg);
 
 }
-void onImgInput(inspec_msg::head inImg){
+void onImgInput(inspec_msg::head msg){
 
-    double last_dif = inImg.stamp.toSec() - imgMsg.front().header.stamp.toSec();
+    double last_dif = msg.stamp.toSec() - DronePosition.front().header.stamp.toSec();
 
     // ######################## Syncronise Lidar & Image data #######################
-    for(uint i = 1; i < imgMsg.size();i++){
-        double dif = inImg.stamp.toSec() - imgMsg[i].header.stamp.toSec();
+    for(uint i = 1; i < DronePosition.size();i++){
+        double dif = msg.stamp.toSec() - DronePosition[i].header.stamp.toSec();
         if(dif<last_dif){
-            imgMsg.pop_front();
+            DronePosition.pop_front();
             i--;
             last_dif = dif;
         }else{
@@ -65,16 +65,16 @@ void onImgInput(inspec_msg::head inImg){
     }
 
     inspec_msg::position msgPos;
-    msgPos.header = inImg;
+    msgPos.header = msg;
 
-    msgPos.position[0] = imgMsg.front().pose.position.x;
-    msgPos.position[1] = imgMsg.front().pose.position.y;
-    msgPos.position[2] = imgMsg.front().pose.position.z;
+    msgPos.position[0] = DronePosition.front().pose.position.y; // Forward
+    msgPos.position[1] = DronePosition.front().pose.position.x; // Right
+    msgPos.position[2] = -DronePosition.front().pose.position.z; // Up
 
-    msgPos.Orientation_quat[0] = imgMsg.front().pose.orientation.w;
-    msgPos.Orientation_quat[1] = imgMsg.front().pose.orientation.x;
-    msgPos.Orientation_quat[2] = imgMsg.front().pose.orientation.y;
-    msgPos.Orientation_quat[3] = imgMsg.front().pose.orientation.z;
+    msgPos.Orientation_quat[0] = DronePosition.front().pose.orientation.w;
+    msgPos.Orientation_quat[1] = DronePosition.front().pose.orientation.x;
+    msgPos.Orientation_quat[2] = DronePosition.front().pose.orientation.y;
+    msgPos.Orientation_quat[3] = DronePosition.front().pose.orientation.z;
 
     NED_QUAT_Position_handler(msgPos);
 }
@@ -86,7 +86,6 @@ int main(int argc, char* argv[]){
     global_NED_sub = nh.subscribe("/inspec/daq/DroneInfo/Position",10,NED_QUAT_Position_handler);
     drone_local_sub = nh.subscribe("/mavros/local_position/pose",1, onPositionUpdate);
     camImgSub = nh.subscribe("/inspec/daq/linedetection/gotImage",1,onImgInput);
-
 
     ros::spin();
     return 0;
