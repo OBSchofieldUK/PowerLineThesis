@@ -91,6 +91,7 @@ void Line_handler(inspec_msg::line2d_array msg){
             }else{
                 break;
             }
+            cout << "Time diff: " << dif << endl;
         }
         //DEBUG
         for(uint i = 0; i < msg.lines.size(); i++){
@@ -175,8 +176,8 @@ int main(int argc, char **argv){
 
 
 
-    ros::Subscriber lidar_data_sub = nh.subscribe("/lidarDat",1,Lidar_data_handler);
-    ros::Subscriber line_sub = nh.subscribe("/linedetector/lines2d",1,Line_handler);
+    ros::Subscriber lidar_data_sub = nh.subscribe("/inspec/daq/lidarDat",1,Lidar_data_handler);
+    ros::Subscriber line_sub = nh.subscribe("/inspec/daq/linedetector/lines2d",1,Line_handler);
 
     Matched_pub = nh.advertise<inspec_msg::matched_lidar_data_array>("/lidarDat/Matched",1);
 

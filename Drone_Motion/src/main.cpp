@@ -42,8 +42,8 @@ int main(int argc, char* argv[]){
     ros::init(argc,argv,"drone_motion");
     ros::NodeHandle nh;
 
-    motion_pub = nh.advertise<inspec_msg::position>("DroneInfo/Relative/Position",10);
-    global_NED_sub = nh.subscribe("/DroneInfo/Position",10,NED_QUAT_Position_handler);
+    motion_pub = nh.advertise<inspec_msg::position>("/inspec/daq/DroneInfo/Relative/Position",10);
+    global_NED_sub = nh.subscribe("/inspec/daq/DroneInfo/Position",10,NED_QUAT_Position_handler);
     //drone_local_sub = nh.subscribe("/mavros/local_position/pose",1,);
 
     ros::spin();

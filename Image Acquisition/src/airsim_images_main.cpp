@@ -98,7 +98,7 @@ int main(int argc, char **argv){
     ros::init(argc,argv,"Airsim_images");
     ros::NodeHandle nh = ros::NodeHandle();
     img_pub = nh.advertise<sensor_msgs::Image>("/webcam/image_raw",10);
-    position_pub = nh.advertise<inspec_msg::position>("DroneInfo/Position",10);
+    position_pub = nh.advertise<inspec_msg::position>("/inspec/daq/DroneInfo/Position",10);
     settings::read(setting);
     
     // ############# Open Recording File #################

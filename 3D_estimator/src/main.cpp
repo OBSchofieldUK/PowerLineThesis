@@ -486,12 +486,12 @@ int main(int argc, char* argv[]){
     }
     Q = G*Sigma_u_diag*Sigma_u_diag.transpose()*G.transpose(); 
     // Initialize ROS publishers and Subscribers
-    line_sub = nh.subscribe("/linedetector/lines2d",1,line_handler);
-    position_sub = nh.subscribe("/DroneInfo/Relative/Position",1,position_handler);
-    lidar_sub = nh.subscribe("/lidarDat/Matched",1,lidar_handler);
+    line_sub = nh.subscribe("/inspec/daq/linedetector/lines2d",1,line_handler);
+    position_sub = nh.subscribe("/inspec/daq/DroneInfo/Relative/Position",1,position_handler);
+    lidar_sub = nh.subscribe("/inspec/daq/lidarDat/Matched",1,lidar_handler);
 
-    line_pub = nh.advertise<inspec_msg::line3d_array>("/Estimator/lines3d",10);
-    line2Dest_pub = nh.advertise<inspec_msg::line2d_array>("/Estimator/lines2d",10);
+    line_pub = nh.advertise<inspec_msg::line3d_array>("/inspec/daq/Estimator/lines3d",10);
+    line2Dest_pub = nh.advertise<inspec_msg::line2d_array>("/inspec/daq/Estimator/lines2d",10);
     
     //Let ros spin
     ros::spin();
