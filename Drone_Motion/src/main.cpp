@@ -32,7 +32,7 @@ deque<geometry_msgs::PoseStamped> imgMsg ;
 void NED_QUAT_Position_handler(inspec_msg::position msg){
     msg.position[2] *= -1; //Invert z axis to go upwards instead of down
     TransM wTe(convert::ros2Vector3D(msg.position),convert::ros2Quaternion(msg.Orientation_quat).toRotation3D());
-    TransM sTe = rw::math::inverse(wTs)*wTe; 
+    TransM sTe = rw::math::inverse(wTs)*wTe;
 
     // ############# Finalize ###########################
     inspec_msg::position return_msg;
@@ -51,7 +51,7 @@ void onPositionUpdate(geometry_msgs::PoseStamped msg){
 }
 
 void onImgInput(inspec_msg::head inImg){
-    
+
     double last_dif = inImg.stamp.toSec() - imgMsg.front().header.stamp.toSec();
 
     // ######################## Syncronise Lidar & Image data #######################
@@ -68,7 +68,7 @@ void onImgInput(inspec_msg::head inImg){
 
     inspec_msg::position msgPos;
     msgPos.header = inImg;
-    
+
     msgPos.position[0] = imgMsg.front().pose.position.x;
     msgPos.position[1] = imgMsg.front().pose.position.y;
     msgPos.position[2] = imgMsg.front().pose.position.z;
@@ -89,6 +89,7 @@ int main(int argc, char* argv[]){
     global_NED_sub = nh.subscribe("/DroneInfo/Position",10,NED_QUAT_Position_handler);
     drone_local_sub = nh.subscribe("/mavros/local_position/pose",1, onPositionUpdate);
     camImgSub = nh.subscribe("linedetection/gotImage",1,onImgInput);
+
 
     ros::spin();
     return 0;

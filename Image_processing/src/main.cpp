@@ -234,10 +234,10 @@ int main(int argc, char* argv[]){
     // ############## Start Ros ################
     ros::init(argc,argv,"Image_Processing");
     nh = new ros::NodeHandle();
-    estimate_sub = nh->subscribe("/Estimator/lines2d",1,estimate_handler);
+    estimate_sub = nh->subscribe("/inspec/daq/Estimator/lines2d",1,estimate_handler);
     image_sub = nh->subscribe("/webcam/image_raw",1,image_handler);
-    line_pub = nh->advertise<inspec_msg::line2d_array>("/linedetector/lines2d",1);
-    gotImage_pub = nh->advertise<inspec_msg::head>("/linedetector/gotImage",1);
+    line_pub = nh->advertise<inspec_msg::line2d_array>("/inspec/daq/linedetector/lines2d",1);
+    gotImage_pub = nh->advertise<inspec_msg::head>("/inspec/daq/linedetector/gotImage",1);
     
     settings::read(setting_node);
     settings::read(setting_PLineD);

@@ -57,7 +57,7 @@ int main( int argc, char *argv[] )
     //ROS Setup
     ros::init(argc, argv,"leddarNode");
     ros::NodeHandle n;
-    ros::Publisher lidarPub = n.advertise<inspec_msg::lidardat>("lidarDat", 10);
+    ros::Publisher lidarPub = n.advertise<inspec_msg::lidardat>("/inspec/daq/lidarDat", 10);
     ros::Rate loop_rate(20);
 
     // Lidar Pointer Setup
