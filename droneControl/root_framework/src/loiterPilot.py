@@ -46,16 +46,24 @@ class loiterPilot():
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
         keypress.lower()
-        if keypress == 'w':
+        if keypress == 'a':
             self.loiterPos.pose.position.x += 0.5 
         if keypress == 'd':
             self.loiterPos.pose.position.x -= 0.5
         if keypress == 'w':
             self.loiterPos.pose.position.y += 0.5
+        if keypress == 's':
+            self.loiterPos.pose.position.y -= 0.5
         if keypress == 'z':
             self.loiterPos.pose.position.z += 0.5 
         if keypress == 'x':
             self.loiterPos.pose.position.z -= 0.5
+        if keypress == 'q':
+            #TODO rotation to euler adjustment 
+            pass
+        if keypress == 'e':
+            #TODO rotation to euler adjustment 
+            pass
     
     def onStateChange(self, msg):
         if msg.data == 'loiter':

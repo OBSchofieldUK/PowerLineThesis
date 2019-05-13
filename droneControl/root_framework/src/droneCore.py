@@ -12,7 +12,7 @@ import mavros_msgs.srv
 
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import NavSatFix
-from std_msgs.msg import (String, Int8)
+from std_msgs.msg import (String, Int8, Bool)
 
 mavros.set_namespace('mavros')
 # mavros commands for 
@@ -23,6 +23,7 @@ keySub = '/gcs/keypress'
 
 linefollowsub = '/onboard/setpoint/linefollow'
 homePubTopic = '/onboard/position/home'
+wpDoneSub = '/onboard/check/WPSuccess'
 class droneCore():
     def __init__(self):
         rospy.init_node('droneCMD_node')
@@ -34,7 +35,7 @@ class droneCore():
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPos)
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self._cb_SatFix)
         rospy.Subscriber(keySub,Int8, self._cb_onKeypress)
-
+        rospy.Subscriber(wpDoneSub, Bool, self._stateComplete)
         self.statePub = rospy.Publisher(onB_StateSub, String, queue_size=1)
         self.spLocalPub = mavSP.get_pub_position_local(queue_size=5)
         self.homePub = rospy.Publisher(homePubTopic, NavSatFix, queue_size=1)
@@ -53,6 +54,8 @@ class droneCore():
         self.droneArmed = False
         self.loiter = False
         self.isAirbourne = False
+        self.sysState = None
+
 
     # ROS-Specific functions 
     def _genPoseMsg(self, x, y, z):
@@ -107,7 +110,13 @@ class droneCore():
         if keypress == 'h':
             self.homeCoord = self.gpsPos
             self.homePub.publish(self.homeCoord)
-        
+
+    def _stateComplete(self,msg):
+        if (msg.data == True):
+            if self.sysState == 'mission': 
+                self.statePub.publish('inspect')
+                self.sysState = 'inspect'
+
     def droneTakeoff(self, alt=1.0):
         if not self.droneArmed:
             mavCMD.arming(True)
@@ -115,6 +124,7 @@ class droneCore():
         preArmMsgs = self.curPos
         preArmMsgs.pose.position.z = alt
         # preArmMsgs = self._genPoseMsg(0,0,alt)
+        print(preArmMsgs)
         for i in range(100):
             self._pubMsg(preArmMsgs, self.spLocalPub)
         if self.homeCoord == None:
@@ -139,6 +149,7 @@ class droneCore():
         
     def missionEnable(self):
         self.statePub.publish('mission')
+        self.sysState = 'mission'
         pass
     
     def run(self):
