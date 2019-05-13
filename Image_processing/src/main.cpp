@@ -257,10 +257,8 @@ int main(int argc, char* argv[]){
         if(setting_PLineD.Parrallel_active) ShowImage("ParLines",BLACK,1210,610);
         ShowImage("PLineD",BLACK,1210,610);
     }else{
-
         if(setting_node.show_incomming_image) ShowImage("TestImage",BLACK);
         if(setting_node.show_final_image) ShowImage("PLineD",BLACK,50,600);
-
     }
     if(DEBUG_PROXIMITY_FILTER_){
         ShowImage("Proximity",BLACK,610,610);
