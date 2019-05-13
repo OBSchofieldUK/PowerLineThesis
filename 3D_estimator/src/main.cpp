@@ -47,6 +47,7 @@ typedef Eigen::Matrix<double,7,1> Vector7d;
 typedef Eigen::Matrix<double,4,1> Vector4d;
 typedef Eigen::Matrix<double,7,7> Matrix7;
 typedef Eigen::Matrix<double,4,4> Matrix4;
+typedef Eigen::Matrix<double,1,7> Matrix1x7;
 typedef Eigen::Matrix<double,4,7> Matrix4x7;
 typedef Eigen::Matrix<double,7,4> Matrix7x4;
 
@@ -62,6 +63,8 @@ struct camera{
     double d;       //in Meters
     point pixel;    //Resolution
     point size;     //Physical chipsize in meters
+    double Xs;
+    double Ys;
 };
 struct lineEstimate{
     Vector7d X_hat;
@@ -93,6 +96,8 @@ Matrix7  Sigma_u_diag;
 Vector4d Sigma_r;
 Matrix4  Sigma_r_diag;
 
+double Sigma_r_lidar_diag;
+
 Matrix7 G;
 Matrix7 Q;
 
@@ -117,8 +122,8 @@ camera currentCam;
 
 // ######################### MATLAB Functions ####################################
 Matrix4x7 H_matrix(Vector7d vec, camera cam){
-    double X_scale = cam.pixel.x/cam.size.x;
-    double Y_scale = cam.pixel.y/cam.size.y;
+    double &X_scale = cam.Xs;
+    double &Y_scale = cam.Ys;
     double &d = cam.d;
     double &x0 = vec(0);
     double &y0 = vec(1);
@@ -290,25 +295,18 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
     NormalizeLine(line3d);
     return line3d;
 }
+
+double findT(const Vector7d &line3D,const  point &point2d, const camera cam){
+    return -(line3D[X0] - (point2d.x*line3D[Z0])/(cam.d*cam.Xs))/(line3D[dX] - (line3D[dZ]*point2d.x)/(cam.d*cam.Xs));
+}
+
 rw::math::Vector3D<double> pointOn3Dline(Vector7d line3D, point point2d, camera cam){
-    double Xs = cam.size.x/cam.pixel.x;
-    double Ys = cam.size.y/cam.pixel.y;
-
-    double c = (line3D[X0]*line3D[Z0]-point2d.x)*(Xs/cam.d);
-    double b = (line3D[X0]*line3D[dZ]+line3D[Z0]*line3D[dX])*(Xs/cam.d);
-    double a = (line3D[dX]*line3D[dZ])*(Xs/cam.d);
-
-    double tp = (-b + sqrt(b*b-4*a*c))/(2*a);
-    double tm = (-b - sqrt(b*b-4*a*c))/(2*a);
-    cout << "tp: " << tp << " - tm: " << tm << endl;
-
-    double t = tp;
+    double t = findT(line3D,point2d,cam);
     rw::math::Vector3D<double> result;
     for(uint i = 0; i < 3; i ++) result[i] = line3D[X0+i]+t*line3D[dX+i];
     return result;
 
 }
-
 
 // ########################## ROS Helper Functions #################################
 inspec_msg::line2d line2ros2D(lineEstimate line){
@@ -385,6 +383,23 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
 
 }
 void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_data &correction_data){ 
+    double Z = correction_data.distance;
+    point p;
+    p.x = correction_data.x;
+    p.y = correction_data.y;
+    double t = findT(theLine.X_hat,p,currentCam);
+
+    Matrix1x7 H;
+    H << 0,0,1,0,0,0,t;
+
+    const Eigen::Matrix<double,1,1> &R = Sigma_r_lidar_diag*H*H.transpose()*Sigma_r_lidar_diag;
+
+    Eigen::Matrix<double,1,1> S = H*theLine.P*H.transpose()+R;
+    Eigen::Matrix<double,7,1> K = theLine.P*H.transpose()*S.inverse();
+
+    theLine.P = theLine.P - K*H*theLine.P;
+    theLine.X_hat = theLine.X_hat + K*(Z-(theLine.X_hat[3]+t*theLine.X_hat[7]));
+    NormalizeLine(theLine.X_hat);
 
 }
 // ########################## ROS handlers ####################################
@@ -460,7 +475,6 @@ void position_handler(inspec_msg::position msg){
         line2Dest_pub.publish(return_msg);
     }
 }
-
 int main(int argc, char* argv[]){
     ros::init(argc,argv,"estimator3d");
     ros::NodeHandle nh = ros::NodeHandle();
@@ -472,12 +486,16 @@ int main(int argc, char* argv[]){
     currentCam.d = setting_camera.d;
     currentCam.size.x = setting_camera.Chip_size_x;
     currentCam.size.y = setting_camera.Chip_size_y;
+    currentCam.Xs = currentCam.pixel.x/currentCam.size.x;
+    currentCam.Ys = currentCam.pixel.y/currentCam.size.y;
 
     // Initialize constatn Matrix;
     X_hat_initial_guess << 0,0,5,0,0,0,0;
     P_initial   << 3    ,3      ,10     ,0      ,0.2    ,0.2    ,0.2;
     Sigma_u     << 1    ,1      ,1      ,0      ,0.1    ,0.1    ,0.1;
     Sigma_r     << 0.1  ,0.1    ,0.01   ,0.01;
+    Sigma_r_lidar_diag = 0.01;
+
     for(int i = 0; i < 7; i++){
         G(i,i) = 1;
         if (i < 4) Sigma_r_diag(i,i) = Sigma_r(i);

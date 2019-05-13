@@ -9,7 +9,8 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED 
   roscpp
-  std_msgs 
+  std_msgs
+  geometry_msgs
   inspec_msg
   inspec_lib
   )
@@ -25,6 +26,7 @@ catkin_package(
     roscpp
     std_msgs
     inspec_msg
+    geometry_msgs
     inspec_lib
   DEPENDS ROBWORK
 )
