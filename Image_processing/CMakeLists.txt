@@ -116,10 +116,17 @@ add_executable(${PROJECT_NAME}_node
   src/ThicknessEstimator.cpp
 )
 
+add_executable(dummy_node
+  src/Dummy_main.cpp 
+)
+
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
+)
+target_link_libraries(dummy_node
+   ${catkin_LIBRARIES}
 )
 
 #############

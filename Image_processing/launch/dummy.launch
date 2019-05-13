@@ -1,0 +1,3 @@
+<launch>
+   <node name="image_processing" pkg="image_processing" type="dummy_node" output="screen" />
+</launch>
