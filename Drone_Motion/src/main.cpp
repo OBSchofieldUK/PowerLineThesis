@@ -87,6 +87,16 @@ int main(int argc, char* argv[]){
     drone_local_sub = nh.subscribe("/mavros/local_position/pose",1, onPositionUpdate);
     camImgSub = nh.subscribe("/inspec/daq/linedetection/gotImage",1,onImgInput);
 
+    rw::math::RPY<double> r(0,0,rw::math::Pi/2);
+
+    cout << r << endl;
+    cout << r.toRotation3D() << endl;
+
+    rw::math::RPY<double> r2(rw::math::Pi/2,0,0);
+
+    cout << r2 << endl;
+    cout << r2.toRotation3D() << endl;
+
     ros::spin();
     return 0;
 }
