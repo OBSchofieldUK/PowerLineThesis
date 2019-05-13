@@ -158,7 +158,7 @@ namespace rw { namespace math {
          * @return the resulting stream
          */
         friend std::ostream& operator<<(std::ostream& os, const RPY<T>& rpy){
-            return os <<"RPY {"<<rpy(0)<<", "<<rpy(1)<<", "<<rpy(2)<<"}";
+            return os <<"RPY {"<<rpy(2)*(180/3.14)<<", "<<rpy(1)*(180/3.14)<<", "<<rpy(0)*(180/3.14)<<"}";
             //return os << rpy._rpy;
         }
 

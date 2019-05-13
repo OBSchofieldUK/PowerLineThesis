@@ -31,7 +31,15 @@ deque<geometry_msgs::PoseStamped> DronePosition ;
 
 void NED_QUAT_Position_handler(inspec_msg::position msg){
     msg.position[2] *= -1; //Invert z axis to go upwards instead of down
-    TransM wTe(convert::ros2Vector3D(msg.position),convert::ros2Quaternion(msg.Orientation_quat).toRotation3D());
+    Quat angle = convert::ros2Quaternion(msg.Orientation_quat);
+    
+    RPY a(angle.toRotation3D());
+    double h = a[0];
+    a[0] = a[2];
+    a[2] = h;
+    //cout << a << endl;
+    angle = Quat(a.toRotation3D());
+    TransM wTe(convert::ros2Vector3D(msg.position),angle.toRotation3D());
     TransM sTe = rw::math::inverse(wTs)*wTe;
 
     // ############# Finalize ###########################
@@ -46,38 +54,36 @@ void NED_QUAT_Position_handler(inspec_msg::position msg){
 void onPositionUpdate(geometry_msgs::PoseStamped msg){
     // Pose -> position.x
     DronePosition.push_back(msg);
-
 }
 void onImgInput(inspec_msg::head msg){
 
-    double last_dif = msg.stamp.toSec() - DronePosition.front().header.stamp.toSec();
+    if(!DronePosition.empty()){
+        double last_dif = msg.stamp.toSec() - DronePosition.front().header.stamp.toSec();
 
-    // ######################## Syncronise Lidar & Image data #######################
-    for(uint i = 1; i < DronePosition.size();i++){
-        double dif = msg.stamp.toSec() - DronePosition[i].header.stamp.toSec();
-        if(dif<last_dif){
-            DronePosition.pop_front();
-            i--;
-            last_dif = dif;
-        }else{
-            break;
+        // ######################## Syncronise Position & Image data #######################
+        while(DronePosition.size()>1){
+            double dif = msg.stamp.toSec() - DronePosition[1].header.stamp.toSec();
+            if(dif<last_dif){
+                DronePosition.pop_front();
+                last_dif = dif;
+            }else{
+                break;
+            }
         }
+        inspec_msg::position msgPos;
+        msgPos.header = msg;
+
+        msgPos.position[0] = DronePosition.front().pose.position.x; // Forward
+        msgPos.position[1] = DronePosition.front().pose.position.y; // Right
+        msgPos.position[2] = -DronePosition.front().pose.position.z; // Up
+
+        msgPos.Orientation_quat[0] = DronePosition.front().pose.orientation.w;
+        msgPos.Orientation_quat[1] = DronePosition.front().pose.orientation.x;
+        msgPos.Orientation_quat[2] = DronePosition.front().pose.orientation.y;
+        msgPos.Orientation_quat[3] = DronePosition.front().pose.orientation.z;
+
+        NED_QUAT_Position_handler(msgPos);
     }
-    cout << DronePosition.size() << endl; 
-
-    inspec_msg::position msgPos;
-    msgPos.header = msg;
-
-    msgPos.position[0] = DronePosition.front().pose.position.y; // Forward
-    msgPos.position[1] = DronePosition.front().pose.position.x; // Right
-    msgPos.position[2] = -DronePosition.front().pose.position.z; // Up
-
-    msgPos.Orientation_quat[0] = DronePosition.front().pose.orientation.w;
-    msgPos.Orientation_quat[1] = DronePosition.front().pose.orientation.x;
-    msgPos.Orientation_quat[2] = DronePosition.front().pose.orientation.y;
-    msgPos.Orientation_quat[3] = DronePosition.front().pose.orientation.z;
-
-    NED_QUAT_Position_handler(msgPos);
 }
 int main(int argc, char* argv[]){
     ros::init(argc,argv,"drone_motion");

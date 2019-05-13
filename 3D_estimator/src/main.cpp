@@ -24,6 +24,7 @@
 #include <inspec_lib/Math.hpp>
 #include <inspec_lib/converters/RosConverters.hpp>
 #include <inspec_lib/converters/CoordinateConverters.hpp>
+#include <inspec_lib/converters/OtherConverters.hpp>
 
 #include <inspec_lib/settings/ReadSettings.hpp>
 #include <inspec_lib/settings/SettingStructs.hpp>
@@ -81,6 +82,7 @@ struct lineEstimate{
 };
 
 settings::Camera setting_camera;
+rw::math::Transform3D<double> droneTcam;
 
 // #### ROS Variables #####
 ros::Subscriber lidar_sub;
@@ -443,14 +445,22 @@ void line_handler(inspec_msg::line2d_array msg){
     }
 }
 void position_handler(inspec_msg::position msg){
-    std::cout << "Position Recived: " << msg.header.seq << endl;
+    std::cout << endl << "Position Recived: " << msg.header.seq << endl;
     if(msg.header.seq > position_seq){
         position_seq = msg.header.seq;
         positionQueue.push_front(msg);
         positionQueue.pop_back();
 
-        Matrix7 F = F_matrix(   convert::FRU2Image3D(convert::ros2Vector3D(msg.position)),
-                                convert::FRU2Image3D(convert::ros2Quaternion(msg.Orientation_quat)));
+        rw::math::Vector3D<double> move = convert::ros2Vector3D(msg.position);
+        rw::math::Rotation3D<double> rot = convert::ros2Quaternion(msg.Orientation_quat).toRotation3D();
+        move = droneTcam.R()*move;
+
+        //cout << move << endl;
+        rot = rot*droneTcam.R();
+        //cout << rw::math::RPY<double>(rot) << endl;
+
+        Matrix7 F = F_matrix(   convert::FRU2Image3D(move),
+                                convert::FRU2Image3D(rot));
 
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;
@@ -488,7 +498,8 @@ int main(int argc, char* argv[]){
     currentCam.size.y = setting_camera.Chip_size_y;
     currentCam.Xs = currentCam.pixel.x/currentCam.size.x;
     currentCam.Ys = currentCam.pixel.y/currentCam.size.y;
-
+    droneTcam = convert::ToTransform(setting_camera.XYZ_camTdrone,setting_camera.RPY_camTdrone);
+    cout << droneTcam << endl;
     // Initialize constatn Matrix;
     X_hat_initial_guess << 0,0,5,0,0,0,0;
     P_initial   << 3    ,3      ,10     ,0      ,0.2    ,0.2    ,0.2;
