@@ -63,6 +63,7 @@ void onImgInput(inspec_msg::head msg){
             break;
         }
     }
+    cout << DronePosition.size() << endl; 
 
     inspec_msg::position msgPos;
     msgPos.header = msg;
@@ -86,16 +87,6 @@ int main(int argc, char* argv[]){
     global_NED_sub = nh.subscribe("/inspec/daq/DroneInfo/Position",10,NED_QUAT_Position_handler);
     drone_local_sub = nh.subscribe("/mavros/local_position/pose",1, onPositionUpdate);
     camImgSub = nh.subscribe("/inspec/daq/linedetection/gotImage",1,onImgInput);
-
-    rw::math::RPY<double> r(0,0,rw::math::Pi/2);
-
-    cout << r << endl;
-    cout << r.toRotation3D() << endl;
-
-    rw::math::RPY<double> r2(rw::math::Pi/2,0,0);
-
-    cout << r2 << endl;
-    cout << r2.toRotation3D() << endl;
 
     ros::spin();
     return 0;

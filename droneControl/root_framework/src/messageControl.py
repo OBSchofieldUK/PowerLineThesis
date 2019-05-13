@@ -25,6 +25,7 @@ missionSub = '/onboard/setpoint/mission'
 inspectSub = '/onboard/setpoint/inspect'
 
 homeSub = '/onboard/position/home'
+homeReqPub = '/onboard/request/gpsHome'
 
 class msgControl():
     def __init__(self):
@@ -41,7 +42,9 @@ class msgControl():
 
         self.setpointPub = mavSP.get_pub_position_local(queue_size=5)
         self.wpCompletePub = rospy.Publisher('/onboard/check/WPSuccess', Bool, queue_size=1)
-        self.homePos = NavSatFix()
+        self.homeGPSPub = rospy.Publisher(homeReqPub, Bool, queue_size=1) 
+
+        self.homePos = None
         self.enable = False
         self.setpoint = mavSP.PoseStamped()
         self.curLocalPos = mavSP.PoseStamped()
@@ -58,13 +61,14 @@ class msgControl():
         if msg.data == 'loiter':
 
             pass
+
         if msg.data == 'mission':
             self.enable = True
             pass
     
     def _cb_localPosUpdate(self, msg):
         self.curLocalPos = msg
-    
+
     def _cb_onHomeUpdate(self, msg):
         self.homePos = msg
 
@@ -83,6 +87,7 @@ class msgControl():
         # msg.dist_Z
         # msg.yaw
         pass
+
     def waypointCheck(self):
         altCheck, setPointPos = self.altitudeCheck()
         proxCheck = self.proximityCheck()
@@ -98,6 +103,7 @@ class msgControl():
             preMsg.pose.position.x = self.curLocalPos.pose.position.x
             preMsg.pose.position.y = self.curLocalPos.pose.position.y
             preMsg.pose.position.z = self.setpoint.pose.position.z
+            preMsg.pose.orientation = self.curLocalPos.pose.orientation
             altCheck = False
         else:
             preMsg.pose.position.x = self.setpoint.pose.position.x
@@ -123,21 +129,20 @@ class msgControl():
 
     def gpsToLocal(self, gpsPos):
         utmPos = utm.from_latlon(gpsPos.latitude, gpsPos.longitude)
-        #TODO: add check for home == 0,0,0
+
         utmHome = utm.from_latlon(self.homePos.latitude, self.homePos.longitude)
 
         deltaNorth, deltaEast, _ = self.calcDist(utmPos, utmHome)
         deltaAlt = gpsPos.altitude
-        print ("Local Point: %.4f, %.4f, %.2f" % (deltaNorth, deltaEast, gpsPos.altitude))
+        # print ("Local Point: %.4f, %.4f, %.2f" % (deltaNorth, deltaEast, gpsPos.altitude))
         return deltaNorth, deltaEast, deltaAlt
 
     def run(self):
+        if self.homePos == None:
+            self.homeGPSPub.publish(True)
         while not rospy.is_shutdown():
             if self.enable:
-                # self._pubMsg(self.setpoint, self.setpointPub)
                 self.waypointCheck()
-                pass
-                # self._pubMsg(self.loiterPos, self.loiterPub)
             self.rate.sleep()
 
 

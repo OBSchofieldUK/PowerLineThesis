@@ -132,8 +132,9 @@ class missionPilot():
         pass
     def inspectLine(self):
         #TODO add Inspector for PowerLine
-        pass
         
+        pass
+
     def runMission(self):
         self.navToPylon()
         self.inspectLine()

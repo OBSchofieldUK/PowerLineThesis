@@ -24,6 +24,7 @@ keySub = '/gcs/keypress'
 linefollowsub = '/onboard/setpoint/linefollow'
 homePubTopic = '/onboard/position/home'
 wpDoneSub = '/onboard/check/WPSuccess'
+homeReqPub = '/onboard/request/gpsHome'
 class droneCore():
     def __init__(self):
         rospy.init_node('droneCMD_node')
@@ -36,6 +37,8 @@ class droneCore():
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self._cb_SatFix)
         rospy.Subscriber(keySub,Int8, self._cb_onKeypress)
         rospy.Subscriber(wpDoneSub, Bool, self._stateComplete)
+        rospy.Subscriber(homeReqPub, Bool, self.onHomeRequest)
+
         self.statePub = rospy.Publisher(onB_StateSub, String, queue_size=1)
         self.spLocalPub = mavSP.get_pub_position_local(queue_size=5)
         self.homePub = rospy.Publisher(homePubTopic, NavSatFix, queue_size=1)
@@ -90,6 +93,11 @@ class droneCore():
     def _cb_SatFix(self,msg):
         self.gpsPos = msg
 
+    def onHomeRequest(self, msg):
+        
+        if msg.data == True:
+            self.homePub.publish(self.homeCoord)
+    
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
         keypress.lower()
@@ -153,6 +161,9 @@ class droneCore():
         pass
     
     def run(self):
+        if self.homeCoord == None:
+            self.homeCoord = self.gpsPos
+            print("Home Updated.")
         while not rospy.is_shutdown():
             self.rate.sleep()
         pass

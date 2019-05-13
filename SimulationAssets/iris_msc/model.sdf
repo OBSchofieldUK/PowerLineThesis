@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
-  <model name='iris_lidar'>
+  <model name='iris_msc'>
     <link name='/imu_link'>
       <pose frame=''>0 0 0 0 -0 0</pose>
       <inertial>
@@ -490,7 +490,7 @@
       </collision>
     </link>
     <model name='camera'>
-      <pose frame=''>0 0 0 0 -1.5707 0</pose>
+      <pose frame=''>0 0 0 0 -1.5707 1.5707</pose>
       <link name='link'>
         <inertial>
           <mass>0.1</mass>
@@ -540,70 +540,11 @@
             <distortionT1>0.0</distortionT1>
             <distortionT2>0.0</distortionT2>
           </plugin>
-        
         </sensor>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-    </model>
-    <model name='leddarTest'>
-      <link name='link'>
-        <inertial>
-          <pose frame=''>0 0 0 0 -0 0</pose>
-          <mass>0.19</mass>
-          <inertia>
-            <ixx>4.15e-06</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>2.407e-06</iyy>
-            <iyz>0</iyz>
-            <izz>2.407e-06</izz>
-          </inertia>
-        </inertial>
-        <visual name='visual'>
-          <geometry>
-            <box>
-              <size>0.02 0.02 0.05</size>
-            </box>
-          </geometry>
-        </visual>
-        <sensor name='laser' type='gpu_ray'>
-          <ray>
-            <scan>
-              <horizontal>
-                <samples>8</samples>
-                <resolution>1</resolution>
-                <min_angle>-0.4189</min_angle>
-                <max_angle>0.4189</max_angle>
-              </horizontal>
-            </scan>
-            <range>
-              <min>0.2</min>
-              <max>6</max>
-              <resolution>0.05</resolution>
-            </range>
-            <noise>
-              <type>gaussian</type>
-              <mean>0</mean>
-              <stddev>0.01</stddev>
-            </noise>
-          </ray>
-          <plugin name='laser' filename='libRayPlugin.so'/>
-          <plugin name='gazebo_ros_head_leddarTech_controller' filename='libgazebo_ros_laser.so'>
-            
-            <topicName>laser/scan</topicName>
-            <frameName>LeddarVU8_link</frameName>
-          </plugin>
-          <always_on>1</always_on>
-          <update_rate>5.5</update_rate>
-          <visualize>1</visualize>
-        </sensor>
-        <self_collide>0</self_collide>
-        <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
-      </link>
-      <pose frame=''>-0.039996 0 0.045687 0 -1.5707 0</pose>
     </model>
     <joint name='/imu_joint' type='revolute'>
       <parent>base_link</parent>
@@ -625,23 +566,6 @@
           <friction>0</friction>
         </dynamics>
       </axis>
-      <physics>
-        <ode>
-          <limit>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </limit>
-          <suspension>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </suspension>
-        </ode>
-      </physics>
-    </joint>
-    <joint name='base_link_JOINT_0_0' type='fixed'>
-      <parent>base_link</parent>
-      <child>leddarTest::link</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
       <physics>
         <ode>
           <limit>
@@ -884,7 +808,6 @@
       <gpsSubTopic>/gps</gpsSubTopic>
       <mavlink_addr>INADDR_ANY</mavlink_addr>
       <mavlink_udp_port>14560</mavlink_udp_port>
-      <mavlink_tcp_port>4560</mavlink_tcp_port>
       <serialEnabled>0</serialEnabled>
       <serialDevice>/dev/ttyACM0</serialDevice>
       <baudRate>921600</baudRate>
@@ -893,10 +816,6 @@
       <hil_mode>0</hil_mode>
       <hil_state_level>0</hil_state_level>
       <vehicle_is_tailsitter>0</vehicle_is_tailsitter>
-      <send_vision_estimation>1</send_vision_estimation>
-      <send_odometry>0</send_odometry>
-      <enable_lockstep>1</enable_lockstep>
-      <use_tcp>1</use_tcp>
       <motorSpeedCommandPubTopic>/gazebo/command/motor_speed</motorSpeedCommandPubTopic>
       <control_channels>
         <channel name='rotor1'>
