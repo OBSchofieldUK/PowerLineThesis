@@ -452,8 +452,10 @@ void position_handler(inspec_msg::position msg){
         positionQueue.pop_back();
 
         rw::math::Vector3D<double> move = convert::ros2Vector3D(msg.position);
-        rw::math::EAA<double> rot(convert::ros2Quaternion(msg.Orientation_quat).toRotation3D());
+        rw::math::Rotation3D<double> rot = convert::ros2Quaternion(msg.Orientation_quat).toRotation3D();
+        /*rw::math::EAA<double> rot(convert::ros2Quaternion(msg.Orientation_quat).toRotation3D());
         
+        cout << move << endl;
         move = droneTcam.R()*move;
         move = convert::FRU2Image3D(move);
         cout << move << endl;
@@ -463,9 +465,17 @@ void position_handler(inspec_msg::position msg){
         rot = rw::math::EAA<double>(droneTcam.R()*rot.axis(),rot.angle());
 
         rw::math::Rotation3D<double> rot2 = convert::FRU2Image3D(rot.toRotation3D());
-        cout << rw::math::RPY<double>(rot2) << endl;
 
-        Matrix7 F = F_matrix(move,rot2);
+        rw::math::RPY<double> rot3(rot2);
+        rot3(0) *= -1;
+        rot3(2) *= -1;
+        cout << rw::math::RPY<double>(rot3) << endl;*/
+
+        //move(1) *= -1;
+        move(1) *=-1;
+        cout << move << endl;
+        cout << rw::math::RPY<double>(rot) << endl;
+        Matrix7 F = F_matrix(move,rot);
 
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;

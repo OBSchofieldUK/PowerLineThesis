@@ -1,3 +1,4 @@
-float64 dist_XY
-float64 dist_Z
+float64 x
+float64 y
+float64 z
 float64 Yaw

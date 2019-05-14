@@ -38,17 +38,17 @@ inspec_msg::line3d selector(const inspec_msg::line3d_array &line_array){
 
 inspec_msg::line_control_info controlInfo(const inspec_msg::line3d &line){
     rw::math::Vector3D<double> pos = closestPoint(line);
-    pos = convert::Image3D2FRU(pos);
-    pos = camTdrone * pos;
+    /*pos = convert::Image3D2FRU(pos);
+    pos = camTdrone * pos;*/
 
     rw::math::Vector3D<double> dir(line.dir[0],line.dir[1],line.dir[2]);
-    dir = convert::Image3D2FRU(dir);
-    dir = camTdrone.R()*dir;
+    //dir = convert::Image3D2FRU(dir);
+    //dir = camTdrone.R()*dir;
     
     inspec_msg::line_control_info info;
-
-    info.dist_Z = pos[2];
-    info.dist_XY = sqrt(pos[0]*pos[0]+pos[1]*pos[1]);
+    info.x = pos[0];
+    info.y = pos[1];
+    info.z = pos[2];
     info.Yaw = atan(dir[1]/dir[0]);
     return info;
 }

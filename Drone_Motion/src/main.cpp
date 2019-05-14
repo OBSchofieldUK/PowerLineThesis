@@ -82,7 +82,8 @@ void onImgInput(inspec_msg::head msg){
         msgPos.Orientation_quat[1] = DronePosition.front().pose.orientation.x;
         msgPos.Orientation_quat[2] = DronePosition.front().pose.orientation.y;
         msgPos.Orientation_quat[3] = DronePosition.front().pose.orientation.z;
-
+        DronePosition.pop_front();
+        
         NED_QUAT_Position_handler(msgPos);
     }
 }
