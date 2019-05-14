@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find drone_motion)/launch/prog.launch" />
+    <include file="$(find image_processing)/launch/dummy.launch" />
+    <include file="$(find estimator3d)/launch/prog.launch" />
+</launch>
