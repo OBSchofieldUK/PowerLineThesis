@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
     //estimate_sub = nh->subscribe("/inspec/daq/Estimator/lines2d",1,estimate_handler);
     //image_sub = nh->subscribe("/webcam/image_raw",1,image_handler);
     //line_pub = nh->advertise<inspec_msg::line2d_array>("/inspec/daq/linedetector/lines2d",1);
-    gotImage_pub = nh->advertise<inspec_msg::head>("/inspec/daq/linedetection/gotImage", 1);
+    gotImage_pub = nh->advertise<inspec_msg::head>("/inspec/daq/linedetector/gotImage", 1);
 
     while(ros::ok()){
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));

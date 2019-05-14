@@ -379,6 +379,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
         theLine.trust_estimate = true;
     }else{
         theLine.trust_estimate = false;
+        theLine.trust_estimate = true;
     }
     //cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
     cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
@@ -472,10 +473,18 @@ void position_handler(inspec_msg::position msg){
         cout << rw::math::RPY<double>(rot3) << endl;*/
 
         //move(1) *= -1;
-        move(1) *=-1;
-        cout << move << endl;
-        cout << rw::math::RPY<double>(rot) << endl;
-        Matrix7 F = F_matrix(move,rot);
+        //cout << move << endl;
+        //cout << rw::math::RPY<double>(rot) << endl;
+        move(0) *= -1;
+        move(2) *= -1;
+        rw::math::RPY<double> rot2(rot);
+        //rot2(0) *= -1; //Yaw
+        rot2(1) *= -1; //Pitch
+        rot2(2) *= -1; // Roll
+
+
+        cout << rot2 << endl;
+        Matrix7 F = F_matrix(move,rot2.toRotation3D());
 
         inspec_msg::line2d_array return_msg;
         vector<lineEstimate> toRemove;
@@ -514,12 +523,11 @@ int main(int argc, char* argv[]){
     currentCam.Xs = currentCam.pixel.x/currentCam.size.x;
     currentCam.Ys = currentCam.pixel.y/currentCam.size.y;
     droneTcam = convert::ToTransform(setting_camera.XYZ_camTdrone,setting_camera.RPY_camTdrone);
-    cout << droneTcam << endl;
     // Initialize constatn Matrix;
     X_hat_initial_guess << 0,0,5,0,0,0,0;
-    P_initial   << 3    ,3      ,10     ,0      ,0.2    ,0.2    ,0.2;
-    Sigma_u     << 1    ,1      ,1      ,0      ,0.1    ,0.1    ,0.1;
-    Sigma_r     << 0.1  ,0.1    ,0.01   ,0.01;
+    P_initial   << 10    ,10      ,10     ,0      ,10    ,10    ,10;
+    Sigma_u     << 1    ,1      ,1      ,0      ,1    ,1    ,1;
+    Sigma_r     << 0.01  ,0.01    ,0.001   ,0.001;
     Sigma_r_lidar_diag = 0.01;
 
     for(int i = 0; i < 7; i++){

@@ -55,7 +55,7 @@ namespace convert{
         return Quaternion2ros(vec.toRotation3D());
     }
 
-    inspec_msg::line2d_array line2d_array_construct(std::vector<inspec_msg::line2d> lines, uint seq, ros::Time time){
+    inspec_msg::line2d_array line2d_array_construct(uint seq, std::vector<inspec_msg::line2d> lines ,ros::Time time){
         inspec_msg::line2d_array A;
         A.header.seq = seq;
         A.header.stamp = time;
