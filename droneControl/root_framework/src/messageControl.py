@@ -77,7 +77,9 @@ class msgControl():
     def onStateChange(self, msg):
         if msg.data == 'mission':
             self.sysState = 'missionHold'
-            self.pilot_pylonNavMsg = None
+        else:
+            self.sysState = msg.data
+        print(self.sysState)
     def _cb_localPosUpdate(self, msg):
         self.curLocalPos = msg
         if self.homePos == None:
@@ -94,10 +96,12 @@ class msgControl():
 
     def pilot_pylonNavMsg(self, msg):
         x,y,z = self.gpsToLocal(msg)
-        self.pylonNavMsg.pose.position.x = y
-        self.pylonNavMsg.pose.position.y = x
-        self.pylonNavMsg.pose.position.z = z
-        self.pylonNavMsg.pose.orientation = self.curLocalPos.pose.orientation
+        tmpSP = mavSP.PoseStamped()
+        tmpSP.pose.position.x = y
+        tmpSP.pose.position.y = x
+        tmpSP.pose.position.z = z
+        tmpSP.pose.orientation = self.curLocalPos.pose.orientation
+        self.pylonNavMsg = tmpSP
         self.sysState = 'mission'
 
     def _onInspectPosUpdate(self,msg):
@@ -112,7 +116,7 @@ class msgControl():
             outwardMsg = self.loiterMsg
 
         if self.sysState == 'missionHold':
-            outMsg = self.loiterMsg
+            outwardMsg = self.loiterMsg
 
         if self.sysState == 'mission':
             outwardMsg = self.pylonNavMsg
@@ -128,10 +132,11 @@ class msgControl():
         altCheck, setPointPos = self.altitudeCheck()
         proxCheck = self.proximityCheck()
         self._pubMsg(setPointPos, self.setpointPub)
-        print(self.sysState)
-        if self.sysState != 'loiter' or (self.sysState != 'missionHold'):
-            if proxCheck and altCheck:
-                self.wpCompletePub.publish(True)
+
+        if self.sysState != 'loiter':
+            if self.sysState != 'missionHold':
+                if altCheck and proxCheck:
+                    self.wpCompletePub.publish(True) 
 
     def altitudeCheck(self):
         preMsg = mavSP.PoseStamped()

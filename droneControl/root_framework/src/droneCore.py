@@ -141,7 +141,7 @@ class droneCore():
 
             for i in range(50):
                 self._pubMsg(preArmMsgs, self.spLocalPub)
-
+            self.statePub.publish('takeoff')
             self.setMode(0,'OFFBOARD')
             self.setPoint = preArmMsgs
 
