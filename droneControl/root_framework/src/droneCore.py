@@ -88,13 +88,14 @@ class droneCore():
 
     def _cb_localPos(self, msg):
         self.curPos = msg
+        if self.uavState.armed and (self.curPos.pose.position.z > 0.25):
+            self.isAirbourne = True
         # self.curPos = self._genPoseMsg(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)        
         pass
     def _cb_SatFix(self,msg):
         self.gpsPos = msg
 
     def onHomeRequest(self, msg):
-        
         if msg.data == True:
             self.homePub.publish(self.homeCoord)
     
@@ -132,9 +133,10 @@ class droneCore():
         preArmMsgs = self.curPos
         preArmMsgs.pose.position.z = alt
         # preArmMsgs = self._genPoseMsg(0,0,alt)
-        print(preArmMsgs)
-        for i in range(100):
+        # print(preArmMsgs)
+        for i in range(50):
             self._pubMsg(preArmMsgs, self.spLocalPub)
+
         if self.homeCoord == None:
             self.homeCoord = self.gpsPos
             self.homePub.publish(self.homeCoord)
