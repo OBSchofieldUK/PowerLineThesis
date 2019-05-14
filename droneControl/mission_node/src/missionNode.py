@@ -129,12 +129,12 @@ class missionPilot():
             wpTarget.longitude = WPADJ[1]
             wpTarget.altitude = 10.0
             self.wpPub.publish(wpTarget)
-        pass
-
+            print("published")
+        else:
+            print("Warning: no pylons found! loitering...")
 
     def runMission(self):
         self.navToPylon()
-
         
     def run(self):
         while not(rospy.is_shutdown()):

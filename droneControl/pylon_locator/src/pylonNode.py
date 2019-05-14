@@ -68,7 +68,7 @@ class pylon_node():
         # working find power nodes
         nodes = xmlRoot.findall('node')
         numTowers = xmlRoot.findall("node//tag/[@v='tower']")
-        print("number of towers: ", len(numTowers))
+        # print("number of towers: ", len(numTowers))
         towerList = []
         for child in nodes:
             tags = child.findall(".//tag/[@k]")
