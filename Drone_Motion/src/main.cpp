@@ -45,6 +45,7 @@ void NED_QUAT_Position_handler(inspec_msg::position msg){
     // ############# Finalize ###########################
     inspec_msg::position return_msg;
     return_msg.position = convert::Vector3D2ros(sTe.P());
+    return_msg.position[1] *= -1;
     return_msg.Orientation_quat = convert::Quaternion2ros(sTe.R());
     return_msg.header = msg.header;
 
@@ -73,9 +74,9 @@ void onImgInput(inspec_msg::head msg){
         inspec_msg::position msgPos;
         msgPos.header = msg;
 
-        msgPos.position[0] = DronePosition.front().pose.position.x; // Forward
-        msgPos.position[1] = DronePosition.front().pose.position.y; // Right
-        msgPos.position[2] = -DronePosition.front().pose.position.z; // Up
+        msgPos.position[0] = DronePosition.front().pose.position.x; // North
+        msgPos.position[1] = DronePosition.front().pose.position.y; // East
+        msgPos.position[2] = -DronePosition.front().pose.position.z; // Down
 
         msgPos.Orientation_quat[0] = DronePosition.front().pose.orientation.w;
         msgPos.Orientation_quat[1] = DronePosition.front().pose.orientation.x;
