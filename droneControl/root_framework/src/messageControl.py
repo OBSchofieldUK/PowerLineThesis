@@ -31,24 +31,40 @@ class msgControl():
     def __init__(self):
         rospy.init_node('msgControl')
         self.rate = rospy.Rate(20)
+        self.sysState = None
         self.homePos = None
         self.enable = False
+
+        self.loiterMsg = mavSP.PoseStamped()
+        self.pylonNavMsg = None
         self.setpoint = mavSP.PoseStamped()
         self.curLocalPos = mavSP.PoseStamped()
-
-        rospy.Subscriber(onB_StateSub, String, self.onStateChange)
-        # rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.cb_loiterMsg)
-        rospy.Subscriber(missionSub, NavSatFix, self._cb_missionUpdate)
-        rospy.Subscriber(homeSub, NavSatFix, self._cb_onHomeUpdate)
-        rospy.Subscriber(inspectSub,line_control_info, self._onInspectPosUpdate)
-        rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
-        # self.targetPub = rospy.Publisher
-
+        
         self.setpointPub = mavSP.get_pub_position_local(queue_size=5)
         self.wpCompletePub = rospy.Publisher('/onboard/check/WPSuccess', Bool, queue_size=1)
         self.homeGPSPub = rospy.Publisher(homeReqPub, Bool, queue_size=1) 
 
+        # root_framework Subs
+        rospy.Subscriber('/onboard/messageEnable',Bool, self.handlerEnable)
+        rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
+        rospy.Subscriber(onB_StateSub, String, self.onStateChange)
+        rospy.Subscriber(homeSub, NavSatFix, self._cb_onHomeUpdate)
 
+        # pilot subs
+        rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.pilot_loiterMsg)
+        rospy.Subscriber(missionSub, NavSatFix, self.pilot_pylonNavMsg)
+        rospy.Subscriber(inspectSub,line_control_info, self._onInspectPosUpdate)
+
+    def handlerEnable(self,msg):
+        if msg.data == True:
+            print("messageHandler Enabled")
+            self.enable = True
+        if msg.data == False:
+            if self.curLocalPos.pose.position.z > 0.1:
+                print("message Handler: unable to disable - airbourne")
+            else:
+                print("messageHandler Disabled")
+                self.enable = False
 
     def _pubMsg(self, msg, topic):
         msg.header = mavros.setpoint.Header(
@@ -59,14 +75,9 @@ class msgControl():
         self.rate.sleep()
 
     def onStateChange(self, msg):
-        if msg.data == 'loiter':
-
-            pass
-
         if msg.data == 'mission':
-            self.enable = True
-            pass
-    
+            self.sysState = 'missionHold'
+            self.pilot_pylonNavMsg = None
     def _cb_localPosUpdate(self, msg):
         self.curLocalPos = msg
         if self.homePos == None:
@@ -78,26 +89,49 @@ class msgControl():
     def onPositionChange(self, msg):
         self.curPos = msg
     
-    def _cb_missionUpdate(self, msg):
+    def pilot_loiterMsg(self, msg):
+        self.loiterMsg = msg
 
+    def pilot_pylonNavMsg(self, msg):
         x,y,z = self.gpsToLocal(msg)
-        self.setpoint.pose.position.x = y
-        self.setpoint.pose.position.y = x
-        self.setpoint.pose.position.z = z
-        self.setpoint.pose.orientation = self.curLocalPos.pose.orientation
+        self.pylonNavMsg.pose.position.x = y
+        self.pylonNavMsg.pose.position.y = x
+        self.pylonNavMsg.pose.position.z = z
+        self.pylonNavMsg.pose.orientation = self.curLocalPos.pose.orientation
+        self.sysState = 'mission'
 
     def _onInspectPosUpdate(self,msg):
-        # msg.dist_XY
-        # msg.dist_Z
-        # msg.yaw
+        
         pass
 
+    def get_pilotMsg(self):
+        outwardMsg = mavSP.PoseStamped()
+        outwardMsg = self.loiterMsg
+
+        if self.sysState == 'loiter':
+            outwardMsg = self.loiterMsg
+
+        if self.sysState == 'missionHold':
+            outMsg = self.loiterMsg
+
+        if self.sysState == 'mission':
+            outwardMsg = self.pylonNavMsg
+
+        if self.sysState == 'inspect':
+            pass
+        
+        self.setpoint = outwardMsg
+
     def waypointCheck(self):
-        _, setPointPos = self.altitudeCheck()
+        self.get_pilotMsg()
+
+        altCheck, setPointPos = self.altitudeCheck()
         proxCheck = self.proximityCheck()
         self._pubMsg(setPointPos, self.setpointPub)
-        if proxCheck:
-            self.wpCompletePub.publish(True)
+        print(self.sysState)
+        if self.sysState != 'loiter' or (self.sysState != 'missionHold'):
+            if proxCheck and altCheck:
+                self.wpCompletePub.publish(True)
 
     def altitudeCheck(self):
         preMsg = mavSP.PoseStamped()
@@ -106,7 +140,6 @@ class msgControl():
             preMsg.pose.position.x = self.curLocalPos.pose.position.x
             preMsg.pose.position.y = self.curLocalPos.pose.position.y
             preMsg.pose.position.z = self.setpoint.pose.position.z
-            preMsg.pose.orientation = self.curLocalPos.pose.orientation
             altCheck = False
         else:
             preMsg.pose.position.x = self.setpoint.pose.position.x
@@ -114,6 +147,7 @@ class msgControl():
             preMsg.pose.position.z = self.setpoint.pose.position.z
             altCheck = True
         
+        preMsg.pose.orientation = self.curLocalPos.pose.orientation
         return altCheck, preMsg
 
     def proximityCheck(self):
@@ -144,6 +178,7 @@ class msgControl():
         if self.homePos == None:
             self.homeGPSPub.publish(True)
         while not rospy.is_shutdown():
+            
             if self.enable:
                 self.waypointCheck()
             self.rate.sleep()

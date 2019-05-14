@@ -31,9 +31,11 @@ class loiterPilot():
 
         rospy.Subscriber(keySub, Int8, self._cb_onKeypress)
         
-        self.targetPub = rospy.Publisher
-        self.loiterPub = mavSP.get_pub_position_local(queue_size=5)
+        # self.targetPub = rospy.Publisher
+        # self.loiterPub = mavSP.get_pub_position_local(queue_size=5)
 
+        
+        self.loiterPub = rospy.Publisher(targetWP, mavSP.PoseStamped, queue_size=5)
         self.loiterPos = mavSP.PoseStamped()
         self.curPos = mavSP.PoseStamped()
 
