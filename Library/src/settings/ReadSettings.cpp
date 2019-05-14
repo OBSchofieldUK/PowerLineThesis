@@ -138,6 +138,9 @@ namespace settings{
             if(obj.HasMember("Press to continue")){
                 dst.press_to_continue = obj["Press to continue"].GetBool();
             }
+            if(obj.HasMember("Image topic")){
+                dst.Image_topic = obj["Image topic"].GetString();
+            }
         }else{
             rapidjson::Value Object(rapidjson::kObjectType);
 
@@ -152,6 +155,9 @@ namespace settings{
 
             rapidjson::Value ptc(Image_processing_node_Default.press_to_continue);
             Object.AddMember("Press to continue",ptc,doc.GetAllocator());
+            
+            rapidjson::Value top(rapidjson::StringRef(Image_processing_node_Default.Image_topic.c_str()));
+            Object.AddMember("Image topic",top,doc.GetAllocator());
 
             doc.AddMember("Image Processing Node",Object,doc.GetAllocator());
 

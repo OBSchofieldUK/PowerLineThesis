@@ -44,8 +44,9 @@ namespace settings{
         bool show_incomming_image;
         bool show_final_image;
         bool press_to_continue;
+        std::string Image_topic;
     };
-    const Image_processing_node Image_processing_node_Default = {false,true,true,false};
+    const Image_processing_node Image_processing_node_Default = {false,true,true,false,"/webcam/image_raw"};
 
     struct Vannishing_Point_Filter{
         bool debug;
