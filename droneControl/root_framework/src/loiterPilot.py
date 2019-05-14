@@ -17,8 +17,9 @@ mavros.set_namespace('mavros')
 onB_StateSub = '/onboard/state'
 targetWP = '/onboard/setpoint/loiter'
 
-
 keySub = '/gcs/keypress'
+
+debug = True
 class loiterPilot(): 
     def __init__(self):
         rospy.init_node('loiterPilot')
@@ -77,6 +78,12 @@ class loiterPilot():
             if keypress == 'e':
                 self.adjustYaw(-5.0)
                 pass
+            if debug: 
+                if keypress == 'b':
+                    self.loiterPos.pose.position.x = 0
+                    self.loiterPos.pose.position.y = 20
+                    self.loiterPos.pose.position.z = 7.5
+
         else:
             # if keypress == 'd' or 
             print("warn: loiter not enabled")
@@ -98,7 +105,6 @@ class loiterPilot():
 
         while not rospy.is_shutdown():
             if self.enable:
-                
                 self._pubMsg(self.loiterPos, self.loiterPub)
                 self.rate.sleep()
 
