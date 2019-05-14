@@ -130,14 +130,10 @@ class missionPilot():
             wpTarget.altitude = 10.0
             self.wpPub.publish(wpTarget)
         pass
-    def inspectLine(self):
-        #TODO add Inspector for PowerLine
-        
-        pass
+
 
     def runMission(self):
         self.navToPylon()
-        self.inspectLine()
 
         
     def run(self):
