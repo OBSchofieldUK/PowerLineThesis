@@ -85,8 +85,9 @@ class loiterPilot():
                     self.loiterPos.pose.position.z = 7.5
 
         else:
-            # if keypress == 'd' or 
-            print("warn: loiter not enabled")
+            options = "wasdqezx"        #options as above
+            if keypress in options:  
+                print("warn: loiterpilot not enabled")
     
     def onStateChange(self, msg):
         if msg.data == 'loiter':

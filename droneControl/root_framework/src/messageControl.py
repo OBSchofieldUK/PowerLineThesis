@@ -31,6 +31,10 @@ class msgControl():
     def __init__(self):
         rospy.init_node('msgControl')
         self.rate = rospy.Rate(20)
+        self.homePos = None
+        self.enable = False
+        self.setpoint = mavSP.PoseStamped()
+        self.curLocalPos = mavSP.PoseStamped()
 
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
         # rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.cb_loiterMsg)
@@ -44,10 +48,7 @@ class msgControl():
         self.wpCompletePub = rospy.Publisher('/onboard/check/WPSuccess', Bool, queue_size=1)
         self.homeGPSPub = rospy.Publisher(homeReqPub, Bool, queue_size=1) 
 
-        self.homePos = None
-        self.enable = False
-        self.setpoint = mavSP.PoseStamped()
-        self.curLocalPos = mavSP.PoseStamped()
+
 
     def _pubMsg(self, msg, topic):
         msg.header = mavros.setpoint.Header(
@@ -68,6 +69,8 @@ class msgControl():
     
     def _cb_localPosUpdate(self, msg):
         self.curLocalPos = msg
+        if self.homePos == None:
+            self.homeGPSPub.publish(True)
 
     def _cb_onHomeUpdate(self, msg):
         self.homePos = msg
@@ -81,6 +84,7 @@ class msgControl():
         self.setpoint.pose.position.x = y
         self.setpoint.pose.position.y = x
         self.setpoint.pose.position.z = z
+        self.setpoint.pose.orientation = self.curLocalPos.pose.orientation
 
     def _onInspectPosUpdate(self,msg):
         # msg.dist_XY
@@ -89,9 +93,8 @@ class msgControl():
         pass
 
     def waypointCheck(self):
-        altCheck, setPointPos = self.altitudeCheck()
+        _, setPointPos = self.altitudeCheck()
         proxCheck = self.proximityCheck()
-        print ("Alt: %r \t Prox: %r" % (altCheck, proxCheck))
         self._pubMsg(setPointPos, self.setpointPub)
         if proxCheck:
             self.wpCompletePub.publish(True)

@@ -25,11 +25,25 @@ linefollowsub = '/onboard/setpoint/linefollow'
 homePubTopic = '/onboard/position/home'
 wpDoneSub = '/onboard/check/WPSuccess'
 homeReqPub = '/onboard/request/gpsHome'
+
 class droneCore():
     def __init__(self):
         rospy.init_node('droneCMD_node')
         self.rate = rospy.Rate(20)
         
+        self.homeCoord = None
+        self.gpsPos = NavSatFix()
+        self.curPos = mavSP.PoseStamped()
+        self.loiterPos = mavSP.PoseStamped()
+
+        self.uavState = mavros_msgs.msg.State()
+        self.setPoint = mavSP.PoseStamped()
+
+        self.droneArmed = False
+        self.loiter = False
+        self.isAirbourne = False
+        self.sysState = None
+            
         # Publishers/Subscribers
 
         rospy.Subscriber(mavros.get_topic('state'), mavros_msgs.msg.State, self._cb_uavState)
@@ -46,18 +60,7 @@ class droneCore():
         # Services 
         self.setMode = rospy.ServiceProxy('/mavros/set_mode', mavros_msgs.srv.SetMode)
         
-        self.homeCoord = None
-        self.gpsPos = NavSatFix()
-        self.curPos = mavSP.PoseStamped()
-        self.loiterPos = mavSP.PoseStamped()
 
-        self.uavState = mavros_msgs.msg.State()
-        self.setPoint = mavSP.PoseStamped()
-
-        self.droneArmed = False
-        self.loiter = False
-        self.isAirbourne = False
-        self.sysState = None
 
 
     # ROS-Specific functions 
@@ -123,34 +126,39 @@ class droneCore():
     def _stateComplete(self,msg):
         if (msg.data == True):
             if self.sysState == 'mission': 
-                self.statePub.publish('inspect')
-                self.sysState = 'inspect'
+                self.sysState = 'loiter'
+                self.statePub.publish(self.sysState)
 
     def droneTakeoff(self, alt=1.0):
-        if not self.droneArmed:
-            mavCMD.arming(True)
+        if not self.isAirbourne:
 
-        preArmMsgs = self.curPos
-        preArmMsgs.pose.position.z = alt
-        # preArmMsgs = self._genPoseMsg(0,0,alt)
-        # print(preArmMsgs)
-        for i in range(50):
-            self._pubMsg(preArmMsgs, self.spLocalPub)
+            if not self.droneArmed:
+                mavCMD.arming(True)
+            
+            preArmMsgs = self.curPos
+            preArmMsgs.pose.position.z = alt
+            # preArmMsgs = self._genPoseMsg(0,0,alt)
+            # print(preArmMsgs)
+            for i in range(50):
+                self._pubMsg(preArmMsgs, self.spLocalPub)
 
-        if self.homeCoord == None:
-            self.homeCoord = self.gpsPos
-            self.homePub.publish(self.homeCoord)
-            print("home updated")
+            # if self.homeCoord == None:
+            #     self.homeCoord = self.gpsPos
+            #     self.homePub.publish(self.homeCoord)
+            #     print("home updated")
 
-        self.setMode(0,'OFFBOARD')
-        self.setPoint = preArmMsgs
+            self.setMode(0,'OFFBOARD')
+            self.setPoint = preArmMsgs
 
-        self.isAirbourne = True
+            self.isAirbourne = True
 
-        #wait until takeoff has occurred
-        while(self.curPos.pose.position.z <= (preArmMsgs.pose.position.z-0.25)):
-            self._pubMsg(self.setPoint, self.spLocalPub)
-        
+            #wait until takeoff has occurred
+            while(self.curPos.pose.position.z <= (preArmMsgs.pose.position.z-0.25)):
+                self._pubMsg(self.setPoint, self.spLocalPub)
+        else:
+            print('landing')
+
+            
     def droneLoiter(self):
         # print('loiter enable')
         self.statePub.publish('loiter')
