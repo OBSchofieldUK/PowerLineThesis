@@ -85,6 +85,8 @@ void onImgInput(inspec_msg::head msg){
         DronePosition.pop_front();
         
         NED_QUAT_Position_handler(msgPos);
+    }else{
+        cout << "[drone_motion]: No position data ready: " << msg.seq << endl;
     }
 }
 int main(int argc, char* argv[]){
@@ -94,7 +96,7 @@ int main(int argc, char* argv[]){
     motion_pub = nh.advertise<inspec_msg::position>("/inspec/daq/DroneInfo/Relative/Position",10);
     global_NED_sub = nh.subscribe("/inspec/daq/DroneInfo/Position",10,NED_QUAT_Position_handler);
     drone_local_sub = nh.subscribe("/mavros/local_position/pose",1, onPositionUpdate);
-    camImgSub = nh.subscribe("/inspec/daq/linedetection/gotImage",1,onImgInput);
+    camImgSub = nh.subscribe("/inspec/daq/linedetector/gotImage",1,onImgInput);
 
     ros::spin();
     return 0;

@@ -145,24 +145,26 @@ lineSeg PLineD_full(cv::Mat &src){
 // ############### ROS FUNCTIONS #########################
 
 void image_handler(sensor_msgs::Image msg){
-    if(setting_node.debug) cout << "Image Num: " << msg.header.seq << endl;
-    img_num = msg.header.seq;
-    image_time = msg.header.stamp;
+    if(!gotImage && ros::Time::now().toSec()-image_time.toSec() > 0.5){
+        if(setting_node.debug) cout << "Image Num: " << msg.header.seq << endl;
+        img_num++;
+        image_time = msg.header.stamp;
 
-    cv_bridge::CvImagePtr cv_ptr;
-    try{
-        cv_ptr = cv_bridge::toCvCopy(msg,"bgr8");
-    }catch(cv_bridge::Exception& e){
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-    img = cv_ptr->image;
-    //cv::resize(cv_ptr->image,img,cv::Size(1920,1080));      //Resize To 1920x1080
-    gotImage = true;
+        cv_bridge::CvImagePtr cv_ptr;
+        try{
+            cv_ptr = cv_bridge::toCvCopy(msg,"bgr8");
+        }catch(cv_bridge::Exception& e){
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        img = cv_ptr->image;
+        //cv::resize(cv_ptr->image,img,cv::Size(1920,1080));      //Resize To 1920x1080
+        gotImage = true;
 
-    if(setting_node.show_incomming_image) {
-        cv::imshow("TestImage",img);
-        cv::waitKey(1);
+        if(setting_node.show_incomming_image) {
+            cv::imshow("TestImage",img);
+            cv::waitKey(1);
+        }
     }
 }
 void estimate_handler(inspec_msg::line2d_array msg){
@@ -195,27 +197,47 @@ void PublishLinesToRos(vector<inspec_msg::line2d> &lines){
     line_pub.publish(msg);
 }
 void syncEstimateLines(){
-    ros::spinOnce();
+    uint spins = 1000;
+
+    if(!lineEstimates.empty()){
+        while(lineEstimates.front().header.seq != img_num){
+            cout << "Removing: " << lineEstimates.front().header.seq;
+            lineEstimates.pop_front();
+            if(lineEstimates.empty()) break;
+        }
+    }
+    while(lineEstimates.empty() && spins != 0){
+        ros::spinOnce();
+        spins--;
+        if(spins == 0) cout << "Ran out of spins" << endl;
+        if(!lineEstimates.empty()){
+            cout << "Found Estimate - spins left: "<< spins << endl;
+        } 
+    }
     if(lineEstimates.empty()){
         if(setting_node.debug) cout << "No Line Estimates Available" << endl;
         lineEstimates.push_back(convert::line2d_array_construct());
         if(setting_node.debug) cout << "size: " << lineEstimates.size() << endl;
         return;
     }
+
     if(lineEstimates.size() > 1){
+        cout << "More then one est" << endl;
+        cout << "seq: " << lineEstimates.front().header.seq << endl;
         if(lineEstimates.front().header.seq > img_num){
             cerr << "Houston, We have a Problem" <<endl;
         }else{
             while(lineEstimates.front().header.seq < img_num){
+                lineEstimates.pop_front();
                 if(lineEstimates.empty()){
                     if(setting_node.debug) cout << "No Line Estimates" << endl;
                     lineEstimates.push_back(convert::line2d_array_construct());
                     break;
                 }
-                lineEstimates.pop_front();
             }
         }
     }else{
+        cout << "One Estimate available " << endl;
         if(lineEstimates.front().header.seq != img_num){
             lineEstimates.front() = convert::line2d_array_construct(); 
         }
@@ -240,7 +262,7 @@ int main(int argc, char* argv[]){
     settings::read(setting_PLineD);
     settings::read(setting_camera);
 
-    estimate_sub = nh->subscribe("/inspec/daq/Estimator/lines2d",1,estimate_handler);
+    estimate_sub = nh->subscribe("/inspec/daq/Estimator/lines2d",10,estimate_handler);
     image_sub = nh->subscribe(setting_node.Image_topic.c_str(),1,image_handler);
     line_pub = nh->advertise<inspec_msg::line2d_array>("/inspec/daq/linedetector/lines2d",1);
     gotImage_pub = nh->advertise<inspec_msg::head>("/inspec/daq/linedetector/gotImage",1);
@@ -308,10 +330,9 @@ int main(int argc, char* argv[]){
         // ############### Ready Data for Matching #######################
         for(uint i = 0; i < lines.size(); i++){
             mathLine l = math::leastSquareRegression(lines[i],img.size());
-            if(abs(l.a) < 2) // For Testing Indoor TODO
-                currentLines.push_back(l);
+            //if(abs(l.a) < 2) // For Testing Indoor TODO
+            currentLines.push_back(l);
         }
-        syncEstimateLines();
         // ############# Thickness Est ###############################
         /*ThickEst::vvi pLines;
         ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
@@ -330,8 +351,9 @@ int main(int argc, char* argv[]){
         if(setting_node.debug) cout << "VPFilter found: " << currentLines.size() << endl;
 
         // ################ Line Matching ########################
-        if(setting_node.debug) cout << "Line Mathcher" << endl;
         
+        if(setting_node.debug) cout << "Line Mathcher" << endl;
+        syncEstimateLines();
         vector<inspec_msg::line2d> matched_lines; 
         Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
         

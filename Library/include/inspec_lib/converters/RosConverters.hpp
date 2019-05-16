@@ -28,7 +28,7 @@ namespace convert{
     math::Vector4d ros2line(const inspec_msg::line2d line);
     math::mathLine2d line2mathLine(const math::Vector4d line);
 
-    inspec_msg::line2d_array line2d_array_construct(std::vector<inspec_msg::line2d> lines = std::vector<inspec_msg::line2d>(), uint seq = 0, ros::Time time = ros::Time(0));
+    inspec_msg::line2d_array line2d_array_construct(uint seq = 0, std::vector<inspec_msg::line2d> lines = std::vector<inspec_msg::line2d>(), ros::Time time = ros::Time(0));
 }
 
 #endif
