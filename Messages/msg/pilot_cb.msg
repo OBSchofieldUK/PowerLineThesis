@@ -1,0 +1,2 @@
+bool complete
+string pilotName

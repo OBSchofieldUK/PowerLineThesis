@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from math import pi, radians
+from math import pi, radians, degrees
 import mavros as mav
 import mavros.utils
 import mavros.setpoint as mavSP
@@ -49,18 +49,21 @@ class loiterPilot():
 
     def adjustYaw(self, angle=5.0): 
         (roll, pitch, yaw) = euler_from_quaternion([self.loiterPos.pose.orientation.x, self.loiterPos.pose.orientation.y, self.loiterPos.pose.orientation.z, self.loiterPos.pose.orientation.w])
+
         yaw += radians(angle)
-        orientAdj = quaternion_from_euler(roll, pitch, yaw)
+        orientAdj = quaternion_from_euler(0, 0, yaw)
 
         self.loiterPos.pose.orientation.x = orientAdj[0]
         self.loiterPos.pose.orientation.y = orientAdj[1]
         self.loiterPos.pose.orientation.z = orientAdj[2]
         self.loiterPos.pose.orientation.w = orientAdj[3]
 
+        print(self.loiterPos.pose)
 
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
         keypress.lower()
+        # print("I got:", keypress)
         if self.enable:
             if keypress == 'd':
                 self.loiterPos.pose.position.x += 0.5 
@@ -76,10 +79,8 @@ class loiterPilot():
                 self.loiterPos.pose.position.z -= 0.5
             if keypress == 'q':
                 self.adjustYaw(5.0)
-                pass
             if keypress == 'e':
                 self.adjustYaw(-5.0)
-                pass
             if debug: 
                 if keypress == 'b':
                     self.loiterPos.pose.position.x = 0
@@ -97,8 +98,8 @@ class loiterPilot():
             self.loiterPos = self.curPos
             self.enable = True
         else:
-            if self.enable:
-                print('loiter disabled')
+            # if self.enable:
+                # print('loiter disabled')
             self.enable = False
         
     def onPositionChange(self,msg):

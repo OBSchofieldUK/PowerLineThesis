@@ -13,6 +13,7 @@ import mavros_msgs.srv
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import (String, Int8, Bool)
+from inspec_msg.msg import (pilot_cb)
 
 mavros.set_namespace('mavros')
 # mavros commands for 
@@ -24,8 +25,10 @@ keySub = '/gcs/keypress'
 linefollowsub = '/onboard/setpoint/linefollow'
 homePubTopic = '/onboard/position/home'
 wpDoneSub = '/onboard/check/WPSuccess'
+
 homeReqPub = '/onboard/request/gpsHome'
 
+pilotStateSub = '/onboard/check/pilotState'
 
 class droneCore():
     def __init__(self):
@@ -47,7 +50,8 @@ class droneCore():
         # Publishers/Subscribers
         self.statePub = rospy.Publisher(onB_StateSub, String, queue_size=1)
         self.spLocalPub = mavSP.get_pub_position_local(queue_size=5)
-        self.homePub = rospy.Publisher(homePubTopic, NavSatFix, queue_size=1)
+
+        self.homePub = rospy.Publisher(homePubTopic, mavros_msgs.msg.HomePosition, queue_size=1)
         self.messageHandlerPub = rospy.Publisher('/onboard/messageEnable', Bool, queue_size=1)
 
         # Services 
@@ -56,25 +60,16 @@ class droneCore():
         rospy.Subscriber(mavros.get_topic('state'), mavros_msgs.msg.State, self._cb_uavState)
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPos)
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self._cb_SatFix)
+        rospy.Subscriber(mavros.get_topic('home_position', 'home'), mavros_msgs.msg.HomePosition, self._cb_HomeUpdate)
+      
+      
         rospy.Subscriber(keySub,Int8, self._cb_onKeypress)
-        rospy.Subscriber(wpDoneSub, Bool, self._stateComplete)
+        rospy.Subscriber(pilotStateSub, pilot_cb, self._pilotStateUpdate)
         rospy.Subscriber(homeReqPub, Bool, self.onHomeRequest)
+
         # rospy.Subscriber('/onboard/check/navComplete', Bool, self.onNavigationUpdate)
 
-        
-
-    # ROS-Specific functions 
-    def _genPoseMsg(self, x, y, z):
-        poseMsg = mavros.setpoint.PoseStamped()
-        poseMsg.pose.position.x = x
-        poseMsg.pose.position.y = y
-        poseMsg.pose.position.z = z
-        poseMsg.header = mavros.setpoint.Header(
-            frame_id="att_pose",
-            stamp=rospy.Time.now())
-        
-        return poseMsg
-    
+    # ROS-Specific functions     
     def _pubMsg(self,msg,topic):
         msg.header = mavros.setpoint.Header(
             frame_id="att_pose",
@@ -86,21 +81,27 @@ class droneCore():
 
     def _cb_uavState(self, msg):
         self.uavState = msg
-        # print self.uavState
+        if not self.uavState.armed and self.sysState == 'loiter':
+            self.statePub.publish('idle')
         pass
 
     def _cb_localPos(self, msg):
         self.curPos = msg
         if self.uavState.armed and (self.curPos.pose.position.z > 0.25):
             self.isAirbourne = True
-        # self.curPos = self._genPoseMsg(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)        
+        else: 
+            self.isAirbourne = False
         pass
+
     def _cb_SatFix(self,msg):
         self.gpsPos = msg
 
     def onHomeRequest(self, msg):
         if msg.data == True:
             self.homePub.publish(self.homeCoord)
+            
+    def _cb_HomeUpdate(self,msg):
+        self.homeCoord = msg
     
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
@@ -123,13 +124,11 @@ class droneCore():
             self.homeCoord = self.gpsPos
             self.homePub.publish(self.homeCoord)
 
-    def _stateComplete(self,msg):
-        print("stateCompleted")
-        if (msg.data == True):
-            if self.sysState == 'mission': 
-                # self.sysState = 'loiter'
-                self.statePub.publish(self.sysState)
+    def _pilotStateUpdate(self,msg):
+        print("state update!")
+        print(msg)
 
+## Pilot Commands
     def droneTakeoff(self, alt=1.0):
         if not self.isAirbourne:
 
@@ -152,8 +151,7 @@ class droneCore():
                 self._pubMsg(self.setPoint, self.spLocalPub)
         else:
             print('landing')
-
-            
+    
     def droneLoiter(self):
         # print('loiter enable')
         self.sysState = 'loiter'
@@ -165,10 +163,8 @@ class droneCore():
         pass
     
     def run(self):
+        
         self.messageHandlerPub.publish(self.isAirbourne)
-        if self.homeCoord == None:
-            self.homeCoord = self.gpsPos
-            print("Home Updated.")
         while not rospy.is_shutdown():
 
             self.rate.sleep()

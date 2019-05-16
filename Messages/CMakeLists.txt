@@ -58,6 +58,9 @@ find_package(catkin REQUIRED
    matched_lidar_data.msg
    matched_lidar_data_array.msg
    line_control_info.msg
+   pylonList.msg 
+   pylonDat.msg 
+   pilot_cb.msg
 )
 
 ## Generate services in the 'srv' folder

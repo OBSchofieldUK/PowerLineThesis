@@ -4,11 +4,16 @@
 
 # Set the home position for the simulation. If not set the home position
 # is located in Zurich. This home position is located as the takeoff area
-# in Odense Model airfield
-export PX4_HOME_LAT=55.471979
-export PX4_HOME_LON=10.414697
+# Odense Model airfield
+# export PX4_HOME_LAT=55.471979
+# export PX4_HOME_LON=10.414697
+
+# Point near Seden Strand, near powerlines
+export PX4_HOME_LAT=55.43620
+export PX4_HOME_LON=10.46091
 
 if [[ $1 = "" ]]; then
+# change this to a location of your firmware! must use V1.8.2 of PX4 Firmware
 FIRMDIR="/home/oschofield/src/Firmware/"
 else
 FIRMDIR=$1

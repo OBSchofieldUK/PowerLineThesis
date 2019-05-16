@@ -11,7 +11,9 @@ import mavros.setpoint as mavSP
 import mavros_msgs.msg
 from std_msgs.msg import (String, Bool)
 from sensor_msgs.msg import (NavSatFix)
-from pylon_locator.msg import (pylonList, pylonDat)
+# from pylon_locator.msg import (pylonList, pylonDat)
+from inspec_msg.msg import (pilot_cb, pylonList, pylonDat)
+
 mavros.set_namespace('mavros')
 
 onB_StateSub    = '/onboard/state'
@@ -19,25 +21,35 @@ pylonRequest    = '/onboard/pylonRequest'
 pylonListSub      = '/onboard/pylonList'
 
 targetWP = '/onboard/setpoint/mission'
+wpComplete = '/onboard/check/WPSuccess'
 
+pilotStatePub = '/onboard/check/pilotState'
 class missionPilot():
     def __init__(self):
         rospy.init_node('missionPilot')
         self.rate = rospy.Rate(20)
         self.enable = False
 
-        rospy.Subscriber(onB_StateSub, String, self.onStateChange)
-        rospy.Subscriber(pylonListSub, pylonList, self.onPylonListUpdate)
-        rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
-        self.wpPub = rospy.Publisher(targetWP, NavSatFix, queue_size=1)
-
-        self.towerRequest = rospy.Publisher(pylonRequest, Bool, queue_size=1)
-
         self.dronePos = NavSatFix()
         self.pylonList = []
         self.received = False
         self.pylonOffset = 25 # meters away from the power pylon 
+        self.coordSent = False
 
+        rospy.Subscriber(onB_StateSub, String, self.onStateChange)
+        rospy.Subscriber(pylonListSub, pylonList, self.onPylonListUpdate)
+        rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
+        rospy.Subscriber(wpComplete, Bool, self.onWPArrival)
+
+        self.wpPub = rospy.Publisher(targetWP, NavSatFix, queue_size=1)
+        self.towerRequest = rospy.Publisher(pylonRequest, Bool, queue_size=1)
+        self.pilotStatePub = rospy.Publisher(pilotStatePub, pilot_cb, queue_size=1)
+
+    def sendState(self, state):
+        psMsg = pilot_cb()
+        psMsg.pilotName = 'mission'
+        psMsg.complete = state
+        self.pilotStatePub.publish(psMsg)
     # ROS Subscribers
     def onStateChange(self, msg):
         if msg.data == 'mission':
@@ -48,6 +60,7 @@ class missionPilot():
             self.enable = False
         pass
     
+
     def onPylonListUpdate(self,msg):
         self.pylonList = msg.lists
         self.received = True
@@ -56,6 +69,13 @@ class missionPilot():
     def cb_onPosUpdate(self, msg):
         self.dronePos = msg
 
+    def onWPArrival(self, msg):
+        if msg.data == True and self.coordSent:
+            self.sendState(True)
+
+    def runMission(self):
+        self.coordSent = False
+        self.navToPylon()
     '''
     Calculations for 
         - finding nearest pylon to a reference point (input UTM Coords)
@@ -129,17 +149,15 @@ class missionPilot():
             wpTarget.longitude = WPADJ[1]
             wpTarget.altitude = 10.0
             self.wpPub.publish(wpTarget)
-            print("published")
+            self.coordSent = True
         else:
             print("Warning: no pylons found! loitering...")
-
-    def runMission(self):
-        self.navToPylon()
+            self.sendState(False)
         
     def run(self):
         while not(rospy.is_shutdown()):
             if self.enable:
-
+                
                 pass
             self.rate.sleep()
         pass

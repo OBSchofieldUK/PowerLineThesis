@@ -26,6 +26,8 @@ inspectSub = '/onboard/setpoint/inspect'
 
 homeSub = '/onboard/position/home'
 homeReqPub = '/onboard/request/gpsHome'
+wpCompleteTopic = '/onboard/check/WPSuccess'
+
 
 class msgControl():
     def __init__(self):
@@ -41,14 +43,16 @@ class msgControl():
         self.curLocalPos = mavSP.PoseStamped()
         
         self.setpointPub = mavSP.get_pub_position_local(queue_size=5)
-        self.wpCompletePub = rospy.Publisher('/onboard/check/WPSuccess', Bool, queue_size=1)
+        self.wpCompletePub = rospy.Publisher(wpCompleteTopic, Bool, queue_size=1)
         self.homeGPSPub = rospy.Publisher(homeReqPub, Bool, queue_size=1) 
 
         # root_framework Subs
-        rospy.Subscriber('/onboard/messageEnable',Bool, self.handlerEnable)
-        rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
-        rospy.Subscriber(homeSub, NavSatFix, self._cb_onHomeUpdate)
+        rospy.Subscriber('/onboard/messageEnable',Bool, self.handlerEnable)
+        
+        rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
+        rospy.Subscriber(mavros.get_topic('home_position','home'), mavros_msgs.msg.HomePosition, self._cb_onHomeUpdate)
+
 
         # pilot subs
         rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.pilot_loiterMsg)
@@ -62,6 +66,7 @@ class msgControl():
         if msg.data == False:
             if self.curLocalPos.pose.position.z > 0.1:
                 print("message Handler: unable to disable - airbourne")
+                self.sysState = 'loiter'
             else:
                 print("messageHandler Disabled")
                 self.enable = False
@@ -79,18 +84,19 @@ class msgControl():
             self.sysState = 'missionHold'
         else:
             self.sysState = msg.data
-        print(self.sysState)
+
     def _cb_localPosUpdate(self, msg):
         self.curLocalPos = msg
-        if self.homePos == None:
-            self.homeGPSPub.publish(True)
 
     def _cb_onHomeUpdate(self, msg):
+        if self.homePos == None:
+            print("home updated")
         self.homePos = msg
 
     def onPositionChange(self, msg):
         self.curPos = msg
     
+# pilotMessage Handler
     def pilot_loiterMsg(self, msg):
         self.loiterMsg = msg
 
@@ -100,7 +106,8 @@ class msgControl():
         tmpSP.pose.position.x = y
         tmpSP.pose.position.y = x
         tmpSP.pose.position.z = z
-        tmpSP.pose.orientation = self.curLocalPos.pose.orientation
+        tmpSP.pose.orientation = self.curPos.pose.orientation
+
         self.pylonNavMsg = tmpSP
         self.sysState = 'mission'
 
@@ -126,17 +133,21 @@ class msgControl():
         
         self.setpoint = outwardMsg
 
+
+# Waypoint checking
     def waypointCheck(self):
-        self.get_pilotMsg()
+        if self.homePos == None:
+            print("unable: no home position")
+        else:
+            self.get_pilotMsg()
 
-        altCheck, setPointPos = self.altitudeCheck()
-        proxCheck = self.proximityCheck()
-        self._pubMsg(setPointPos, self.setpointPub)
-
-        if self.sysState != 'loiter':
-            if self.sysState != 'missionHold':
-                if altCheck and proxCheck:
-                    self.wpCompletePub.publish(True) 
+            altCheck, setPointPos = self.altitudeCheck()
+            proxCheck = self.proximityCheck()
+            self._pubMsg(setPointPos, self.setpointPub)
+            if self.sysState != 'loiter':
+                if self.sysState != 'missionHold':
+                    if altCheck and proxCheck:
+                        self.wpCompletePub.publish(True) 
 
     def altitudeCheck(self):
         preMsg = mavSP.PoseStamped()
@@ -152,7 +163,7 @@ class msgControl():
             preMsg.pose.position.z = self.setpoint.pose.position.z
             altCheck = True
         
-        preMsg.pose.orientation = self.curLocalPos.pose.orientation
+        preMsg.pose.orientation = self.setpoint.pose.orientation
         return altCheck, preMsg
 
     def proximityCheck(self):
@@ -161,6 +172,7 @@ class msgControl():
         else:
             return False
 
+# Positioning calcuations
     def calcDist(self, utmPosA, utmPosB):
         dist = -1
         deltaEast = utmPosA[0]-utmPosB[0]
@@ -172,7 +184,7 @@ class msgControl():
     def gpsToLocal(self, gpsPos):
         utmPos = utm.from_latlon(gpsPos.latitude, gpsPos.longitude)
 
-        utmHome = utm.from_latlon(self.homePos.latitude, self.homePos.longitude)
+        utmHome = utm.from_latlon(self.homePos.geo.latitude, self.homePos.geo.longitude)
 
         deltaNorth, deltaEast, _ = self.calcDist(utmPos, utmHome)
         deltaAlt = gpsPos.altitude
@@ -180,8 +192,7 @@ class msgControl():
         return deltaNorth, deltaEast, deltaAlt
 
     def run(self):
-        if self.homePos == None:
-            self.homeGPSPub.publish(True)
+
         while not rospy.is_shutdown():
             
             if self.enable:
