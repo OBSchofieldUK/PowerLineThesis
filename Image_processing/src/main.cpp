@@ -362,7 +362,6 @@ int main(int argc, char* argv[]){
             // ################ Finalize #############################
             if(setting_node.debug) cout << "Published Lines To Ros" << endl << endl;
             PublishLinesToRos(matched_lines);
-            gotImage = false;
             //################# DEBUG ################################
             if(setting_node.show_final_image){
 
