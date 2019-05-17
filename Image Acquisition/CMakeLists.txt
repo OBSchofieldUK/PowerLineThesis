@@ -16,15 +16,12 @@ find_package(catkin REQUIRED
   sensor_msgs
   cv_bridge
   video_stream_opencv
+  rw_lib
 )
 find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
-set(RW_ROOT "$ENV{RW_ROOT}")
-find_package(RobWork REQUIRED PATHS "${RW_ROOT}")
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -115,6 +112,7 @@ catkin_package(
   std_msgs
   inspec_msg
   inspec_lib
+  rw_lib
 )
 
 ###########
@@ -124,7 +122,6 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories( include
-  ${ROBWORK_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
@@ -161,7 +158,6 @@ add_dependencies(airsim_img_node inspec_msg_generate_messages_cpp)
 target_link_libraries(airsim_img_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
-   ${ROBWORK_LIBRARIES}
 )
 
 target_link_libraries(stream_capture_node
