@@ -13,12 +13,10 @@ find_package(catkin REQUIRED
   geometry_msgs
   inspec_msg
   inspec_lib
+  rw_lib
   )
 
-SET(RW_ROOT $ENV{RW_ROOT})
-SET(RobWork_DIR ${RW_ROOT}/cmake) 
 
-find_package(RobWork REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -28,7 +26,7 @@ catkin_package(
     inspec_msg
     geometry_msgs
     inspec_lib
-  DEPENDS ROBWORK
+    rw_lib
 )
 
 ###########
@@ -40,9 +38,8 @@ catkin_package(
 include_directories(
  include
  ${catkin_INCLUDE_DIRS}
- ${ROBWORK_INCLUDE_DIRS}
+
 )
-link_directories( ${ROBWORK_LIBRARY_DIRS})
 
 add_executable(${PROJECT_NAME}_node src/main.cpp)
 add_executable(${PROJECT_NAME}_dummy_node src/dummy_spammer.cpp)
@@ -50,7 +47,6 @@ add_executable(${PROJECT_NAME}_dummy_node src/dummy_spammer.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
-   ${ROBWORK_LIBRARIES}
 )
 target_link_libraries(${PROJECT_NAME}_dummy_node
    ${catkin_LIBRARIES}
