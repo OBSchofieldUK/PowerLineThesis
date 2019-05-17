@@ -300,6 +300,7 @@ int main(int argc, char* argv[]){
 
         //############## Reset and Wait for Data #####################
         currentLines.clear();
+        gotImage = false;
         while(!gotImage && ros::ok()){
             ros::spinOnce();
         }
@@ -315,90 +316,92 @@ int main(int argc, char* argv[]){
 
         lineSeg lines = PLineD_full(img);
         if(setting_node.debug) cout << "PlineD Done found " << lines.size() << " Lines" << endl;
-       
-        //############## Proximity Filtering ############################
-        if(DEBUG_PROXIMITY_FILTER_){
-            cv::Mat out1(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
-            Prox::filter(lines,out1);
-            cv::imshow("Proximity",out1);
-        }else{
-            Prox::filter(lines);
-            
-        }
-        if(setting_node.debug) cout << "Proximity Filter Lines Found: " << lines.size() << endl;
 
-        // ############### Ready Data for Matching #######################
-        for(uint i = 0; i < lines.size(); i++){
-            mathLine l = math::leastSquareRegression(lines[i],img.size());
-            //if(abs(l.a) < 2) // For Testing Indoor TODO
-            currentLines.push_back(l);
-        }
-        // ############# Thickness Est ###############################
-        /*ThickEst::vvi pLines;
-        ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
-        //ThickEst::print(pLines);
-        ThickEst::vpf lineThick;
-        ThickEst::findThickness(pLines,lineThick);
-        mathLine Thickness = math::leastSquareRegression(lineThick,img.size(),false);
-        cout << Thickness << endl;
-        //ThickEst::print(pLines);*/
-        // ############# Vannishing point Filter #####################
-        if(setting_node.debug) cout << "Doing Vanishing point Filter" << endl;
-
-        vector<mathLine> VPFiltered_lines;
-        VP::filterLines(currentLines,VPFiltered_lines,50,300);
-        currentLines = VPFiltered_lines;
-        if(setting_node.debug) cout << "VPFilter found: " << currentLines.size() << endl;
-
-        // ################ Line Matching ########################
-        
-        if(setting_node.debug) cout << "Line Mathcher" << endl;
-        syncEstimateLines();
-        vector<inspec_msg::line2d> matched_lines; 
-        Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
-        
-        // ################ Finalize #############################
-        if(setting_node.debug) cout << "Published Lines To Ros" << endl << endl;
-        PublishLinesToRos(matched_lines);
-        gotImage = false;
-        //################# DEBUG ################################
-        if(setting_node.show_final_image){
-
-            cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
-
-            if(setting_node.debug) cout << "Drawing Found Lines: " << lines.size() << endl;
-            //PLineD::printContours(out, lines);
-
-            map<uint,bool> drawn;
-            for(uint i = 0; i < matched_lines.size(); i++){
-                if(matched_lines[i].id != 0){
-                    drawn[matched_lines[i].id] = true;
-                    math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
-                }else{
-                    math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
-
-                }
+        if(!lines.empty()){
+            //############## Proximity Filtering ############################
+            if(DEBUG_PROXIMITY_FILTER_){
+                cv::Mat out1(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
+                Prox::filter(lines,out1);
+                cv::imshow("Proximity",out1);
+            }else{
+                Prox::filter(lines);
                 
             }
-            if(setting_node.debug) cout << "Drawing EST Lines: " << lineEstimates.size() << endl;
+            if(setting_node.debug) cout << "Proximity Filter Lines Found: " << lines.size() << endl;
 
-            if(!lineEstimates.empty()){
-                for(inspec_msg::line2d line: lineEstimates.front().lines){
-                    if(!drawn[uint(line.id)]){
-                        math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
+            // ############### Ready Data for Matching #######################
+            for(uint i = 0; i < lines.size(); i++){
+                mathLine l = math::leastSquareRegression(lines[i],img.size());
+                //if(abs(l.a) < 2) // For Testing Indoor TODO
+                currentLines.push_back(l);
+            }
+            // ############# Thickness Est ###############################
+            /*ThickEst::vvi pLines;
+            ThickEst::findParallelPixels(lines[0],currentLines[0],pLines);
+            //ThickEst::print(pLines);
+            ThickEst::vpf lineThick;
+            ThickEst::findThickness(pLines,lineThick);
+            mathLine Thickness = math::leastSquareRegression(lineThick,img.size(),false);
+            cout << Thickness << endl;
+            //ThickEst::print(pLines);*/
+            // ############# Vannishing point Filter #####################
+            if(setting_node.debug) cout << "Doing Vanishing point Filter" << endl;
+
+            vector<mathLine> VPFiltered_lines;
+            VP::filterLines(currentLines,VPFiltered_lines,50,300);
+            currentLines = VPFiltered_lines;
+            if(setting_node.debug) cout << "VPFilter found: " << currentLines.size() << endl;
+
+            // ################ Line Matching ########################
+            
+            if(setting_node.debug) cout << "Line Mathcher" << endl;
+            syncEstimateLines();
+            vector<inspec_msg::line2d> matched_lines; 
+            Matcher::matchingAlgorithm(matched_lines,currentLines,lineEstimates.front().lines);
+            
+            // ################ Finalize #############################
+            if(setting_node.debug) cout << "Published Lines To Ros" << endl << endl;
+            PublishLinesToRos(matched_lines);
+            gotImage = false;
+            //################# DEBUG ################################
+            if(setting_node.show_final_image){
+
+                cv::Mat out(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
+
+                if(setting_node.debug) cout << "Drawing Found Lines: " << lines.size() << endl;
+                //PLineD::printContours(out, lines);
+
+                map<uint,bool> drawn;
+                for(uint i = 0; i < matched_lines.size(); i++){
+                    if(matched_lines[i].id != 0){
+                        drawn[matched_lines[i].id] = true;
+                        math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(0,255,0),"Match: "+ to_string(matched_lines[i].id),cv::Scalar(255,0,0));
                     }else{
-                        math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                        math::drawMathLine(out,convert::ros2mathLine(matched_lines[i]),cv::Scalar(255,0,255), "Line: " + to_string(i));
+
+                    }
+                    
+                }
+                if(setting_node.debug) cout << "Drawing EST Lines: " << lineEstimates.size() << endl;
+
+                if(!lineEstimates.empty()){
+                    for(inspec_msg::line2d line: lineEstimates.front().lines){
+                        if(!drawn[uint(line.id)]){
+                            math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(255,255,0),"Line: " + to_string(line.id));
+                        }else{
+                            math::drawMathLine(out,convert::ros2mathLine(line),cv::Scalar(0,255,230),"Match: "+ to_string(line.id),cv::Scalar(255,0,0));
+                        }
                     }
                 }
-            }
-            //imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
+                //imwrite("LineMatch"+to_string(loop_num)+".jpg", out );
 
-            cv::imshow("PLineD",out);
-        }
-        if(!setting_node.press_to_continue){ 
-            cv::waitKey(1);
-        }else{
-            cv::waitKey(0);
+                cv::imshow("PLineD",out);
+            }
+            if(!setting_node.press_to_continue){ 
+                cv::waitKey(1);
+            }else{
+                cv::waitKey(0);
+            }
         }
         
     }
