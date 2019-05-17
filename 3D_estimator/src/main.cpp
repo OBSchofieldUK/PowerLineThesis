@@ -297,7 +297,6 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
     NormalizeLine(line3d);
     return line3d;
 }
-
 double findT(const Vector7d &line3D,const  point &point2d, const camera cam){
     return -(line3D[X0] - (point2d.x*line3D[Z0])/(cam.d*cam.Xs))/(line3D[dX] - (line3D[dZ]*point2d.x)/(cam.d*cam.Xs));
 }
@@ -355,6 +354,7 @@ void updateLineEstimate(lineEstimate &line, const Matrix7 &F){
 
 }
 void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correction_data){ 
+    //Establish Trustwothiness
     if(image_seq - theLine.lastObserved == 1){
         theLine.consecutiveObservations++;
     }else{
@@ -364,26 +364,28 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     theLine.lastObserved = image_seq;
     theLine.last_correct = correction_data;
 
+    //PrePare data for kalman filter
     Vector4d Z = convert::ros2line(correction_data);
     Matrix4x7 H = H_matrix(theLine.X_hat,currentCam);
     const Matrix4 &R = Sigma_r_diag*H*H.transpose()*Sigma_r_diag.transpose();
 
+    //Do kalman filtering
     Matrix4 S = H*theLine.P*H.transpose()+R;
     Matrix7x4 K = theLine.P*H.transpose()*S.inverse();
     theLine.P = theLine.P - K*H*theLine.P;
     theLine.X_hat = theLine.X_hat + K*(Z-theLine.line2d);
     NormalizeLine(theLine.X_hat);
 
+    // Trust current 2D line or Trust correction data
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
     if(math::lineError(theLine.line2d,Z) < MAX_ERROR_FOR_EST_MATCHING){
         theLine.trust_estimate = true;
     }else{
         theLine.trust_estimate = false;
-        theLine.trust_estimate = true;
+        //theLine.trust_estimate = true; // For debug
     }
     //cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
     cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
-
 }
 void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_data &correction_data){ 
     double Z = correction_data.distance;
@@ -525,7 +527,7 @@ int main(int argc, char* argv[]){
     droneTcam = convert::ToTransform(setting_camera.XYZ_camTdrone,setting_camera.RPY_camTdrone);
     // Initialize constatn Matrix;
     X_hat_initial_guess << 0,0,5,0,0,0,0;
-    P_initial   << 10    ,10      ,10     ,0      ,10    ,10    ,10;
+    P_initial   << 10    ,10      ,10     ,0      ,2    ,2    ,10;
     Sigma_u     << 1    ,1      ,1      ,0      ,1    ,1    ,1;
     Sigma_r     << 0.01  ,0.01    ,0.001   ,0.001;
     Sigma_r_lidar_diag = 0.01;
