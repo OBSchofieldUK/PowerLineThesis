@@ -9,10 +9,12 @@ project(leddar_node)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
   roscpp
+  rospy
   leddar_lib
   std_msgs
   message_generation
   inspec_msg
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -111,9 +113,11 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES leddarTmp
   CATKIN_DEPENDS roscpp
+  rospy
   leddar_lib
   message_runtime 
   inspec_msg
+  sensor_msgs
 )
 
 ###########
