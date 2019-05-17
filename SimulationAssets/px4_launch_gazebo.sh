@@ -31,16 +31,6 @@ source Tools/setup_gazebo.bash $(pwd) $(pwd)/build/posix_sitl_default
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/sitl_gazebo
 
-# # create 2 linked virtual serial ports
-#socat -d -d pty,raw,echo=0,link=/tmp/sim1 pty,raw,echo=0,link=/tmp/sim2 &
-
-# # Bridge serial-udp
-#socat -d udp4-listen:14540 open:/tmp/sim1,raw,nonblock,waitlock=/tmp/s0.locak,echo=0,b115200,crnl &
-
 # # launch basic PX4 SITL
 roslaunch px4 msc_posix.launch #&
 
-# # launch mavlink lora script from Kjeld
-# source ~/GIT/RMUASD-Team3-2018/GCS/devel/setup.bash &
-
-# roslaunch mavlink_lora mavlink_lora.launch
