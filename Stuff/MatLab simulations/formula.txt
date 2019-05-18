@@ -1,0 +1,8 @@
+t(x0, z0, dx, dz, point, xs, d) =
+ 
+-(x0 - (point*z0)/(d*xs))/(dx - (dz*point)/(d*xs))
+
+conditions:
+
+dz*point == d*dx*xs | 
+z0*(dx -(dz*point)/(d*xs)) ~= dz*(x0 - (point*z0)/(d*xs))
