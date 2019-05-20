@@ -28,11 +28,25 @@ rw::math::Vector3D<double> closestPoint(const inspec_msg::line3d line){
     double t = (-2*dot(dir,pos-point))/(2* dot(dir,dir));
     return pos+t*dir;
 }
-
+bool isTrusted(const inspec_msg::line3d &line){
+    bool trust = false;
+    if(line.Lidar_fix){
+        trust = true;
+    }else if(line.B_error > 20){
+        trust = true;
+    }
+    if(line.pos[2] < 5 && !line.Lidar_fix){
+        trust = false;
+    }
+    return trust;
+}
 
 //This is a dummy selector just for show casing that one part of the program should select
 //the powerline that the drone is gonna follow
-inspec_msg::line3d selector(const inspec_msg::line3d_array &line_array){ 
+inspec_msg::line3d selector(const inspec_msg::line3d_array &line_array){
+    for(auto l: line_array.lines){
+        if(isTrusted(l)) return l;
+    } 
     return line_array.lines[0];
 }
 
@@ -50,6 +64,9 @@ inspec_msg::line_control_info controlInfo(const inspec_msg::line3d &line){
     info.y = pos[1];
     info.z = pos[2];
     info.Yaw = atan(dir[1]/dir[0]);
+
+    info.trusted = isTrusted(line);
+    
     return info;
 }
 

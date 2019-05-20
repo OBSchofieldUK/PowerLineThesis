@@ -73,12 +73,17 @@ struct lineEstimate{
     Vector4d line2d;
     inspec_msg::line2d last_correct;
 
+    long id;
 
     bool trust_estimate;
-    long id;
     size_t lastObserved;
     size_t consecutiveObservations;
     size_t observations;
+
+    size_t lidar_fix;
+
+    double B_error;
+    double A_error;
 };
 
 settings::Camera setting_camera;
@@ -136,8 +141,8 @@ Matrix4x7 H_matrix(Vector7d vec, camera cam){
     Eigen::Matrix<double,4,7> ret;
     ret.row(0) <<               (X_scale*d)/z0,                            0,                                                                                                       -(X_scale*d*x0)/(z0*z0), 0,                   0,                    0,                                                                                 0;
     ret.row(1) <<                            0,               (Y_scale*d)/z0,                                                                                                       -(Y_scale*d*y0)/(z0*z0), 0,                    0,                    0,                                                                                 0;
-    ret.row(2) << -(X_scale*d*z)/(z0*(z + z0)),                            0, (X_scale*d*x)/(z0*(z + z0)) - (X_scale*d*(x*z0 - x0*z))/(z0*(z + z0)*(z + z0)) - (X_scale*d*(x*z0 - x0*z))/((z0*z0)*(z + z0)), 0, (X_scale*d)/(z + z0),                    0, - (X_scale*d*x0)/(z0*(z + z0)) - (X_scale*d*(x*z0 - x0*z))/(z0*(z + z0)*(z + z0));
-    ret.row(3) <<                            0, -(Y_scale*d*z)/(z0*(z + z0)), (Y_scale*d*y)/(z0*(z + z0)) - (Y_scale*d*(y*z0 - y0*z))/(z0*(z + z0)*(z + z0)) - (Y_scale*d*(y*z0 - y0*z))/((z0*z0)*(z + z0)), 0,                    0, (Y_scale*d)/(z + z0), - (Y_scale*d*y0)/(z0*(z + z0)) - (Y_scale*d*(y*z0 - y0*z))/(z0*(z + z0)*(z + z0));
+    ret.row(2) << -(X_scale*d*z)/(z0*(z + z0)),                            0, (X_scale*d*x)/(z0*(z + z0)) - (X_scale*d*(x*z0 - x0*z))/(z0*(z + z0)*(z + z0)) - (X_scale*d*(x*z0 - x0*z))/((z0*z0)*(z + z0)), 0, (X_scale*d)/(z + z0),                    0, (- (X_scale*d*x0)/(z0*(z + z0)) - (X_scale*d*(x*z0 - x0*z))/(z0*(z + z0)*(z + z0)))*0;
+    ret.row(3) <<                            0, -(Y_scale*d*z)/(z0*(z + z0)), (Y_scale*d*y)/(z0*(z + z0)) - (Y_scale*d*(y*z0 - y0*z))/(z0*(z + z0)*(z + z0)) - (Y_scale*d*(y*z0 - y0*z))/((z0*z0)*(z + z0)), 0,                    0, (Y_scale*d)/(z + z0), (- (Y_scale*d*y0)/(z0*(z + z0)) - (Y_scale*d*(y*z0 - y0*z))/(z0*(z + z0)*(z + z0)))*0;
     return ret;
 }
 Matrix7 F_matrix(rw::math::Vector3D<double> vec, rw::math::Quaternion<double> angle){
@@ -300,7 +305,6 @@ Vector7d line2dTo3d(const Vector4d &line, camera cam, double z = 5, double dz = 
 double findT(const Vector7d &line3D,const  point &point2d, const camera cam){
     return -(line3D[X0] - (point2d.x*line3D[Z0])/(cam.d*cam.Xs))/(line3D[dX] - (line3D[dZ]*point2d.x)/(cam.d*cam.Xs));
 }
-
 rw::math::Vector3D<double> pointOn3Dline(Vector7d line3D, point point2d, camera cam){
     double t = findT(line3D,point2d,cam);
     rw::math::Vector3D<double> result;
@@ -308,6 +312,24 @@ rw::math::Vector3D<double> pointOn3Dline(Vector7d line3D, point point2d, camera 
     return result;
 
 }
+double determinantP(lineEstimate &theLine){
+    Eigen::Matrix<double,6,6> P;
+    for(uint x = 0; x < 7; x++){
+        if(x == Z0 +1) x++;
+        uint x6=x;
+        if(x > Z0) x6-=1;
+        for(uint y = 0; y < 7; y++){
+            if(y == Z0 +1) y++;
+            uint y6=y;
+            if(y > Z0) y6-=1;
+            P(x6,y6)=theLine.P(x,y);
+        }
+    }
+    cout << P << endl;
+    cout << P.determinant() << endl;
+    return P.determinant();
+}
+
 
 // ########################## ROS Helper Functions #################################
 inspec_msg::line2d line2ros2D(lineEstimate line){
@@ -322,7 +344,11 @@ inspec_msg::line2d line2ros2D(lineEstimate line){
     return ret;
 }
 inspec_msg::line3d line2ros3D(lineEstimate line){
-    return convert::line2ros(line.X_hat,line.id);
+    inspec_msg::line3d msg = convert::line2ros(line.X_hat,line.id);
+    msg.B_error = line.B_error;
+    msg.A_error = line.A_error;
+    msg.Lidar_fix = (line.lidar_fix > 5);
+    return msg;
 }
 //############################ Running the kalmanFilter  ################################################
 void addNewLine(inspec_msg::line2d line2d){
@@ -337,6 +363,8 @@ void addNewLine(inspec_msg::line2d line2d){
     newLine.lastObserved = image_seq;
     newLine.consecutiveObservations++;
     newLine.P = P_initial_diag;
+    newLine.B_error = 0;
+    newLine.A_error = 0;
     newLine.line2d = convert::ros2line(line2d);
     newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,5,0.3); //TODO correct this for better start guess
     ActiveLines[newLine.id] = newLine;
@@ -373,8 +401,17 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
     Matrix4 S = H*theLine.P*H.transpose()+R;
     Matrix7x4 K = theLine.P*H.transpose()*S.inverse();
     theLine.P = theLine.P - K*H*theLine.P;
+
+    Vector7d x_hat_old = theLine.X_hat;
     theLine.X_hat = theLine.X_hat + K*(Z-theLine.line2d);
     NormalizeLine(theLine.X_hat);
+
+    Vector7d e = theLine.X_hat-x_hat_old;
+    double B = sqrt(pow(e(X0),2)+pow(e(Y0),2)+pow(e(Z0),2));
+    double A = sqrt(pow(e(dX),2)+pow(e(dY),2)+pow(e(dZ),2));
+    if(B > 0.1) theLine.B_error += B;
+
+    theLine.A_error += A;
 
     // Trust current 2D line or Trust correction data
     theLine.line2d = line3dTo2d(theLine.X_hat,currentCam);
@@ -382,10 +419,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
         theLine.trust_estimate = true;
     }else{
         theLine.trust_estimate = false;
-        //theLine.trust_estimate = true; // For debug
     }
-    //cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
-    cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
 }
 void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_data &correction_data){ 
     double Z = correction_data.distance;
@@ -395,7 +429,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_
     double t = findT(theLine.X_hat,p,currentCam);
 
     Matrix1x7 H;
-    H << 0,0,1,0,0,0,t;
+    H << 0,0,1,0,0,0,0;
 
     const Eigen::Matrix<double,1,1> &R = Sigma_r_lidar_diag*H*H.transpose()*Sigma_r_lidar_diag;
 
@@ -403,8 +437,9 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_
     Eigen::Matrix<double,7,1> K = theLine.P*H.transpose()*S.inverse();
 
     theLine.P = theLine.P - K*H*theLine.P;
-    theLine.X_hat = theLine.X_hat + K*(Z-(theLine.X_hat[3]+t*theLine.X_hat[7]));
+    theLine.X_hat = theLine.X_hat + K*(Z-(theLine.X_hat[Z0]+t*theLine.X_hat[dZ]));
     NormalizeLine(theLine.X_hat);
+    theLine.lidar_fix++;
 
 }
 // ########################## ROS handlers ####################################
@@ -430,16 +465,16 @@ void lidar_handler(inspec_msg::matched_lidar_data_array msg){
 }
 void line_handler(inspec_msg::line2d_array msg){   
     std::cout << "Image Data Recived: " << long(msg.header.seq) << endl;
-    if(msg.header.seq > image_seq && msg.header.seq == position_seq){
+    if(msg.header.seq > image_seq){
         image_seq = msg.header.seq;
         inspec_msg::line3d_array return_msg;
         for(uint i = 0; i < msg.lines.size(); i++){
             try{
                 lineEstimate &line = ActiveLines.at(size_t(msg.lines[i].id));
                 correctLineEstimate(line,msg.lines[i]);
-                if(line.trust_estimate){
+                if(line.consecutiveObservations > 3)
                     return_msg.lines.push_back(line2ros3D(line));
-                }
+                
             }catch(const std::out_of_range& oor) {
                 addNewLine(msg.lines[i]);
             }  
@@ -485,7 +520,7 @@ void position_handler(inspec_msg::position msg){
         rot2(2) *= -1; // Roll
 
 
-        cout << rot2 << endl;
+        //cout << rot2 << endl;
         Matrix7 F = F_matrix(move,rot2.toRotation3D());
 
         inspec_msg::line2d_array return_msg;
