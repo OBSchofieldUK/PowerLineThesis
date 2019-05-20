@@ -521,13 +521,13 @@ void position_handler(inspec_msg::position msg){
         //cout << rw::math::RPY<double>(rot) << endl;
         move(0) *= -1;
         move(2) *= -1;
-        //rw::math::RPY<double> rot2(rot);
+        rw::math::RPY<double> rot2(rot);
         //rot2(0) *= -1; //Yaw
         rot2(1) *= -1; //Pitch
         rot2(2) *= -1; // Roll
 
 
-        cout << rot2 << endl;
+        //cout << rot2 << endl;
         Matrix7 F = F_matrix(move,rot2.toRotation3D());
 
         inspec_msg::line2d_array return_msg;
