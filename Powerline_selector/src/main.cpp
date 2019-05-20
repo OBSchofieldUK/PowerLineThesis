@@ -50,6 +50,14 @@ inspec_msg::line_control_info controlInfo(const inspec_msg::line3d &line){
     info.y = pos[1];
     info.z = pos[2];
     info.Yaw = atan(dir[1]/dir[0]);
+
+    info.trusted = false;
+    if(line.Lidar_fix){
+        info.trusted = true;
+    }else if(line.B_error > 20){
+        info.trusted = true;
+    }
+    
     return info;
 }
 
