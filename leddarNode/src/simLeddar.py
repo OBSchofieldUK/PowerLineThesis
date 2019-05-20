@@ -14,13 +14,13 @@ convLidarPub = '/inspec/daq/lidarDat'
 class gazeboLeddarSim(object):
     def __init__(self):
         rospy.init_node('leddarsim_convert')
+        self.getSettings()
         self.vu8Channels = []
         self.VU8Segments = 0
 
         rospy.Subscriber(lidarTopicSub, LaserScan, self.onLidarUpdate)
         self.lidarPub = rospy.Publisher(convLidarPub, lidardat, queue_size=1)
         self.rate = rospy.Rate(20)
-        self.getSettings()
 
     def getSettings(self):
         pathFind = rospkg.RosPack()
