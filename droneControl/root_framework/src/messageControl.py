@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-import utm
 import math
+import utm
 import rospy
 
-import mavros as mav
 import mavros.utils
 import mavros.setpoint as mavSP
 import mavros.command as mavCMD
@@ -106,7 +105,7 @@ class msgControl():
         tmpSP.pose.position.x = y
         tmpSP.pose.position.y = x
         tmpSP.pose.position.z = z
-        tmpSP.pose.orientation = self.curPos.pose.orientation
+        tmpSP.pose.orientation =  self.curLocalPos.pose.orientation
 
         self.pylonNavMsg = tmpSP
         self.sysState = 'mission'

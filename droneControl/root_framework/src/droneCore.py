@@ -125,10 +125,24 @@ class droneCore():
             self.homePub.publish(self.homeCoord)
 
     def _pilotStateUpdate(self,msg):
-        print("state update!")
-        print(msg)
+        if msg.complete == False:
+            self.setState('loiter')
+        else:
+            pilot = msg.pilotName
+            if pilot == 'mission':
+                self.setState('inspect')
+            if pilot == 'takeoff':
+                self.setMode()
+            if pilot == 'land':
+                self.setMode('idle')
+
 
 ## Pilot Commands
+    def setState(self, state='loiter'):
+        self.sysState = state
+        self.statePub.publish(state)
+
+
     def droneTakeoff(self, alt=1.0):
         if not self.isAirbourne:
 
@@ -154,12 +168,10 @@ class droneCore():
     
     def droneLoiter(self):
         # print('loiter enable')
-        self.sysState = 'loiter'
-        self.statePub.publish('loiter')
+        self.setState('loiter')
         
     def missionEnable(self):
-        self.sysState = 'mission'
-        self.statePub.publish('mission')
+        self.setState('mission')
         pass
     
     def run(self):

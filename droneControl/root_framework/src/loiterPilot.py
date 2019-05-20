@@ -48,7 +48,7 @@ class loiterPilot():
         self.rate.sleep()
 
     def adjustYaw(self, angle=5.0): 
-        (roll, pitch, yaw) = euler_from_quaternion([self.loiterPos.pose.orientation.x, self.loiterPos.pose.orientation.y, self.loiterPos.pose.orientation.z, self.loiterPos.pose.orientation.w])
+        (_, _, yaw) = euler_from_quaternion([self.loiterPos.pose.orientation.x, self.loiterPos.pose.orientation.y, self.loiterPos.pose.orientation.z, self.loiterPos.pose.orientation.w])
 
         yaw += radians(angle)
         orientAdj = quaternion_from_euler(0, 0, yaw)
@@ -58,7 +58,6 @@ class loiterPilot():
         self.loiterPos.pose.orientation.z = orientAdj[2]
         self.loiterPos.pose.orientation.w = orientAdj[3]
 
-        print(self.loiterPos.pose)
 
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
