@@ -366,7 +366,7 @@ void addNewLine(inspec_msg::line2d line2d){
     newLine.B_error = 0;
     newLine.A_error = 0;
     newLine.line2d = convert::ros2line(line2d);
-    newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,15,0.3); //TODO correct this for better start guess
+    newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,5,0.3); //TODO correct this for better start guess
     ActiveLines[newLine.id] = newLine;
 }
 void removeLine(lineEstimate line){
@@ -419,14 +419,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
         theLine.trust_estimate = true;
     }else{
         theLine.trust_estimate = false;
-        //theLine.trust_estimate = true; // For debug
     }
-    //cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
-    //cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
-    //cout << "A error: " << theLine.A_error << " - " << A << endl;
-    //cout << "B error: " << theLine.B_error << " - " << B << endl;
-    //determinantP(theLine);
-    //cout << "P: " << theLine.P<< endl;
 }
 void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_data &correction_data){ 
     double Z = correction_data.distance;
