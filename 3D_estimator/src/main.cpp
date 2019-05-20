@@ -338,7 +338,7 @@ void addNewLine(inspec_msg::line2d line2d){
     newLine.consecutiveObservations++;
     newLine.P = P_initial_diag;
     newLine.line2d = convert::ros2line(line2d);
-    newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,5,0.3); //TODO correct this for better start guess
+    newLine.X_hat = line2dTo3d(newLine.line2d,currentCam,15,0.3); //TODO correct this for better start guess
     ActiveLines[newLine.id] = newLine;
 }
 void removeLine(lineEstimate line){
@@ -395,7 +395,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_
     double t = findT(theLine.X_hat,p,currentCam);
 
     Matrix1x7 H;
-    H << 0,0,1,0,0,0,t;
+    H << 0,0,1,0,0,0,0;
 
     const Eigen::Matrix<double,1,1> &R = Sigma_r_lidar_diag*H*H.transpose()*Sigma_r_lidar_diag;
 
@@ -403,7 +403,7 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::matched_lidar_
     Eigen::Matrix<double,7,1> K = theLine.P*H.transpose()*S.inverse();
 
     theLine.P = theLine.P - K*H*theLine.P;
-    theLine.X_hat = theLine.X_hat + K*(Z-(theLine.X_hat[3]+t*theLine.X_hat[7]));
+    theLine.X_hat = theLine.X_hat + K*(Z-(theLine.X_hat[Z0]+t*theLine.X_hat[dZ]));
     NormalizeLine(theLine.X_hat);
 
 }

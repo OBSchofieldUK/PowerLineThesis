@@ -94,7 +94,7 @@ class msgControl():
         self.homePos = msg
 
     def onPositionChange(self, msg):
-        self.curPos = msg
+        self.curLocalPos = msg
     
 # pilotMessage Handler
     def pilot_loiterMsg(self, msg):
@@ -106,7 +106,7 @@ class msgControl():
         tmpSP.pose.position.x = y
         tmpSP.pose.position.y = x
         tmpSP.pose.position.z = z
-        tmpSP.pose.orientation = self.curPos.pose.orientation
+        tmpSP.pose.orientation = self.curLocalPos.pose.orientation
 
         self.pylonNavMsg = tmpSP
         self.sysState = 'mission'

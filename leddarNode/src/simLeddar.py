@@ -16,7 +16,7 @@ class gazeboLeddarSim(object):
         rospy.init_node('leddarsim_convert')
         self.getSettings()
         self.vu8Channels = []
-        self.VU8Segments = 0
+        self.VU8Segments = 8
 
         rospy.Subscriber(lidarTopicSub, LaserScan, self.onLidarUpdate)
         self.lidarPub = rospy.Publisher(convLidarPub, lidardat, queue_size=1)
@@ -39,12 +39,16 @@ class gazeboLeddarSim(object):
         totalRange = int(degrees(inMsg.angle_max - inMsg.angle_min))
 
         inputSamples = len(inMsg.ranges)
+        #print("Input samples: ", inputSamples)
+
         samplePerSeg = inputSamples/self.VU8Segments
+        #print("Samples per segment: ", samplePerSeg)
+
         self.vu8Channels = []
         for seg in range(0, self.VU8Segments):
             nearestDist = 99999999.0
             for i in range(0, samplePerSeg):
-                # print(i+seg*samplePerSeg)
+                #print("Sample: ",i+seg*samplePerSeg)
                 currSample = inMsg.ranges[i+seg*samplePerSeg]
                 if not isinf(currSample):
                     if currSample < nearestDist:

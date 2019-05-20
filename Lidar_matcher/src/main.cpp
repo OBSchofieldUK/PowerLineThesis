@@ -72,7 +72,7 @@ bool between(cv::Point2f point, cv::Point2f lim1, cv::Point2f lim2){
 }
 
 void Lidar_data_handler(inspec_msg::lidardat msg){
-    cout << "Lidar Data recived" <<endl;
+    //cout << "Lidar Data recived" <<endl;
     incoming_data.push_back(msg);
 }
 void Line_handler(inspec_msg::line2d_array msg){
@@ -80,18 +80,17 @@ void Line_handler(inspec_msg::line2d_array msg){
     cv::Mat img(camera_setting.pixel_height, camera_setting.pixel_width, CV_8UC3, cv::Scalar(0,0,0));
     if(!incoming_data.empty()){
         double last_dif = msg.header.stamp.toSec() - incoming_data.front().header.stamp.toSec();
-
+        
         // ######################## Syncronise Lidar & Image data #######################
         for(uint i = 1; i < incoming_data.size();i++){
             double dif = msg.header.stamp.toSec() - incoming_data[i].header.stamp.toSec();
-            if(dif<last_dif){
+            if(last_dif-dif>-0.001){
                 incoming_data.pop_front();
                 i--;
                 last_dif = dif;
             }else{
                 break;
             }
-            cout << "Time diff: " << dif << endl;
         }
         //DEBUG
         for(uint i = 0; i < msg.lines.size(); i++){
@@ -101,6 +100,7 @@ void Line_handler(inspec_msg::line2d_array msg){
 
         inspec_msg::matched_lidar_data_array match_array;
         inspec_msg::lidardat lidar = incoming_data.front();
+        incoming_data.pop_front();
 
         // ##################### Match Lidar and Image data ########################
         if(lidar.distance.size() ==  lidar_setting.number_of_segments){
@@ -137,6 +137,7 @@ void Line_handler(inspec_msg::line2d_array msg){
                         }
                     }
                     //DEBUG
+                    cout << "Printing Points: " << points.size() << endl;
                     for(auto &p: points){
                         cv::circle(img,convert::real2imgCoord(p,cv::Size(camera_setting.pixel_width,camera_setting.pixel_height)),3,cv::Scalar(0,255,0),2);
                     }
