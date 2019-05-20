@@ -35,6 +35,9 @@ bool isTrusted(const inspec_msg::line3d &line){
     }else if(line.B_error > 20){
         trust = true;
     }
+    if(line.pos[2] < 5 && !line.Lidar_fix){
+        trust = false;
+    }
     return trust;
 }
 
