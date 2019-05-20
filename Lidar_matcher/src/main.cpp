@@ -76,7 +76,7 @@ void Lidar_data_handler(inspec_msg::lidardat msg){
     incoming_data.push_back(msg);
 }
 void Line_handler(inspec_msg::line2d_array msg){
-    cout << "Line data recived" << endl;
+    //cout << "Line data recived" << endl;
     cv::Mat img(camera_setting.pixel_height, camera_setting.pixel_width, CV_8UC3, cv::Scalar(0,0,0));
     if(!incoming_data.empty()){
         double last_dif = msg.header.stamp.toSec() - incoming_data.front().header.stamp.toSec();
@@ -119,7 +119,7 @@ void Line_handler(inspec_msg::line2d_array msg){
                         cv::Point2f p1 = math::intersection(l,l1);
                         cv::Point2f p2 = math::intersection(l,l2);
                         if(between(p1,points[0],points[2]) || between(p2,points[1],points[3])){
-                            cout << "Match: " << i << ", " << line.id << std::endl;
+                            //cout << "Match: " << i << ", " << line.id << std::endl;
                             inspec_msg::matched_lidar_data match;
 
                             //Simple aproximation of distance - Should be using a beam projection using the pixel point and the lidar distance plane
@@ -137,7 +137,7 @@ void Line_handler(inspec_msg::line2d_array msg){
                         }
                     }
                     //DEBUG
-                    cout << "Printing Points: " << points.size() << endl;
+                    //cout << "Printing Points: " << points.size() << endl;
                     for(auto &p: points){
                         cv::circle(img,convert::real2imgCoord(p,cv::Size(camera_setting.pixel_width,camera_setting.pixel_height)),3,cv::Scalar(0,255,0),2);
                     }

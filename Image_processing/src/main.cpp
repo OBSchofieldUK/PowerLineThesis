@@ -201,7 +201,7 @@ void syncEstimateLines(){
 
     if(!lineEstimates.empty()){
         while(lineEstimates.front().header.seq != img_num){
-            cout << "Removing: " << lineEstimates.front().header.seq;
+            if(setting_node.debug) cout << "Removing: " << lineEstimates.front().header.seq << endl;
             lineEstimates.pop_front();
             if(lineEstimates.empty()) break;
         }
@@ -209,9 +209,9 @@ void syncEstimateLines(){
     while(lineEstimates.empty() && spins != 0){
         ros::spinOnce();
         spins--;
-        if(spins == 0) cout << "Ran out of spins" << endl;
+        if(setting_node.debug) if(spins == 0) cout << "Ran out of spins" << endl;
         if(!lineEstimates.empty()){
-            cout << "Found Estimate - spins left: "<< spins << endl;
+            if(setting_node.debug) cout << "Found Estimate - spins left: "<< spins << endl;
         } 
     }
     if(lineEstimates.empty()){
@@ -222,8 +222,8 @@ void syncEstimateLines(){
     }
 
     if(lineEstimates.size() > 1){
-        cout << "More then one est" << endl;
-        cout << "seq: " << lineEstimates.front().header.seq << endl;
+        if(setting_node.debug )cout << "More then one est" << endl;
+        if(setting_node.debug) cout << "seq: " << lineEstimates.front().header.seq << endl;
         if(lineEstimates.front().header.seq > img_num){
             cerr << "Houston, We have a Problem" <<endl;
         }else{
@@ -237,7 +237,7 @@ void syncEstimateLines(){
             }
         }
     }else{
-        cout << "One Estimate available " << endl;
+        if(setting_node.debug) cout << "One Estimate available " << endl;
         if(lineEstimates.front().header.seq != img_num){
             lineEstimates.front() = convert::line2d_array_construct(); 
         }
@@ -266,10 +266,6 @@ int main(int argc, char* argv[]){
     image_sub = nh->subscribe(setting_node.Image_topic.c_str(),1,image_handler);
     line_pub = nh->advertise<inspec_msg::line2d_array>("/inspec/daq/linedetector/lines2d",1);
     gotImage_pub = nh->advertise<inspec_msg::head>("/inspec/daq/linedetector/gotImage",1);
-
-    cout << "Image_processing_debug: " << setting_node.debug << endl;
-    cout << "PLineD debug: " << setting_PLineD.debug << endl;
-
 
     // ############## Setup Output windows ##############
     cv::Mat BLACK(600, 600, CV_8UC3, cv::Scalar(0,0,0)); 
@@ -310,8 +306,8 @@ int main(int argc, char* argv[]){
         loop_num++;
         // ############# Pline D #####################################
         if(setting_node.debug) {
-            std::cout << endl << endl << "###########################################" << endl;
-            cout << "Start Work Flow Image: " << img_num << endl;
+            if(setting_node.debug) cout << endl << endl << "###########################################" << endl;
+            if(setting_node.debug) cout << "Start Work Flow Image: " << img_num << endl;
         }
 
         lineSeg lines = PLineD_full(img);

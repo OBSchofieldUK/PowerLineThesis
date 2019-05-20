@@ -422,9 +422,9 @@ void correctLineEstimate(lineEstimate &theLine, const inspec_msg::line2d &correc
         //theLine.trust_estimate = true; // For debug
     }
     //cout << "Line: " << theLine.id << '\t' << " - " << theLine.X_hat.transpose() << endl;
-    cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
-    cout << "A error: " << theLine.A_error << " - " << A << endl;
-    cout << "B error: " << theLine.B_error << " - " << B << endl;
+    //cout << "Line: " << theLine.id << " - error: " << math::lineError(theLine.line2d,Z) << endl;
+    //cout << "A error: " << theLine.A_error << " - " << A << endl;
+    //cout << "B error: " << theLine.B_error << " - " << B << endl;
     //determinantP(theLine);
     //cout << "P: " << theLine.P<< endl;
 }
@@ -472,7 +472,7 @@ void lidar_handler(inspec_msg::matched_lidar_data_array msg){
 }
 void line_handler(inspec_msg::line2d_array msg){   
     std::cout << "Image Data Recived: " << long(msg.header.seq) << endl;
-    if(msg.header.seq > image_seq && msg.header.seq == position_seq){
+    if(msg.header.seq > image_seq){
         image_seq = msg.header.seq;
         inspec_msg::line3d_array return_msg;
         for(uint i = 0; i < msg.lines.size(); i++){
@@ -521,7 +521,7 @@ void position_handler(inspec_msg::position msg){
         //cout << rw::math::RPY<double>(rot) << endl;
         move(0) *= -1;
         move(2) *= -1;
-        rw::math::RPY<double> rot2(rot);
+        //rw::math::RPY<double> rot2(rot);
         //rot2(0) *= -1; //Yaw
         rot2(1) *= -1; //Pitch
         rot2(2) *= -1; // Roll
