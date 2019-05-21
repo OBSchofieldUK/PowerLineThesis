@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+  <name>data_logger</name>
+  <version>0.0.0</version>
+  <description>The Image analysis program</description>
+  <maintainer email="kalor14@student.sdu.dk">Kasper Hoej lorenzen</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>inspec_msg</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>inspec_lib</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>rw_lib</build_depend>
+
+  <run_depend>inspec_msg</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>inspec_lib</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>rw_lib</run_depend>
+
+  <export>
+
+  </export>
+</package>
