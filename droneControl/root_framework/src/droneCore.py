@@ -30,11 +30,12 @@ homeReqPub = '/onboard/request/gpsHome'
 
 pilotStateSub = '/onboard/check/pilotState'
 
+
 class droneCore():
     def __init__(self):
         rospy.init_node('droneCMD_node')
         self.rate = rospy.Rate(20)
-        
+        self.first = True
         self.homeCoord = None
         self.gpsPos = NavSatFix()
         self.curPos = mavSP.PoseStamped()
@@ -83,15 +84,20 @@ class droneCore():
         self.uavState = msg
         if not self.uavState.armed and self.sysState == 'loiter':
             self.statePub.publish('idle')
+            pass
         pass
 
     def _cb_localPos(self, msg):
         self.curPos = msg
-        if self.uavState.armed and (self.curPos.pose.position.z > 0.25):
-            self.isAirbourne = True
-        else: 
-            self.isAirbourne = False
-        pass
+        if self.first:
+            self.first = False
+            if (self.uavState.armed == True) and (self.isAirbourne == False):
+                if (self.curPos.pose.position.z > 1.0):
+                    #if the node is started and the drone is airbourne, take control and loiter
+                    self.isAirbourne = True
+                    self.messageHandlerPub.publish(True)
+                    self.setState('loiter')
+                pass
 
     def _cb_SatFix(self,msg):
         self.gpsPos = msg
@@ -108,7 +114,8 @@ class droneCore():
         keypress.lower()
         if keypress == 't':
             self.droneTakeoff()
-            self.droneLoiter()
+            if self.sysState == 'takeoff':
+                self.droneLoiter()
         if keypress == 'l':
             if not self.isAirbourne:
                 print ("Warn: Not airbourne!")
@@ -117,35 +124,36 @@ class droneCore():
 
         if keypress == 'm':
             if not self.isAirbourne:
-                self.droneTakeoff(3.0)
+                self.droneTakeoff(2.0)
+                self.droneLoiter()
             self.missionEnable()
         
         if keypress == 'h':
-            self.homeCoord = self.gpsPos
-            self.homePub.publish(self.homeCoord)
+            # self.homeCoord = self.gpsPos
+            # self.homePub.publish(self.homeCoord)
+            pass
+
 
     def _pilotStateUpdate(self,msg):
         if msg.complete == False:
             self.setState('loiter')
         else:
             pilot = msg.pilotName
+            print("%s complete!" % pilot)
             if pilot == 'mission':
-                self.setState('inspect')
+                self.setState('loiter')
             if pilot == 'takeoff':
                 self.setMode()
-            if pilot == 'land':
+            if pilot == 'landing':
                 self.setMode('idle')
 
-
 ## Pilot Commands
-    def setState(self, state='loiter'):
+    def setState(self, state):
         self.sysState = state
         self.statePub.publish(state)
 
-
     def droneTakeoff(self, alt=1.0):
-        if not self.isAirbourne:
-
+        if self.isAirbourne == False or self.sysState == 'idle':
             if not self.droneArmed:
                 mavCMD.arming(True)
             
@@ -154,7 +162,7 @@ class droneCore():
 
             for i in range(50):
                 self._pubMsg(preArmMsgs, self.spLocalPub)
-            self.statePub.publish('takeoff')
+            self.setState('takeoff')
             self.setMode(0,'OFFBOARD')
             self.setPoint = preArmMsgs
 
@@ -164,8 +172,13 @@ class droneCore():
             while(self.curPos.pose.position.z <= (preArmMsgs.pose.position.z-0.25)):
                 self._pubMsg(self.setPoint, self.spLocalPub)
         else:
-            print('landing')
-    
+            self.setState('landing')
+            self.setMode(0,'AUTO.LAND')
+            while self.uavState.armed:
+                self.rate.sleep()
+            self.isAirbourne = False
+            self.setState('idle')
+
     def droneLoiter(self):
         # print('loiter enable')
         self.setState('loiter')
@@ -178,7 +191,6 @@ class droneCore():
         
         self.messageHandlerPub.publish(self.isAirbourne)
         while not rospy.is_shutdown():
-
             self.rate.sleep()
         pass
 

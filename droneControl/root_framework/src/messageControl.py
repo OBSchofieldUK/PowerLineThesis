@@ -11,7 +11,7 @@ import mavros.command as mavCMD
 import mavros_msgs.msg
 import mavros_msgs.srv
 
-from std_msgs.msg import (Bool, String)
+from std_msgs.msg import (Bool, String, Int8)
 from sensor_msgs.msg import NavSatFix
 from inspec_msg.msg import line_control_info
 
@@ -22,6 +22,8 @@ onB_StateSub = '/onboard/state'
 loiterSub = '/onboard/setpoint/loiter'
 missionSub = '/onboard/setpoint/mission'
 inspectSub = '/onboard/setpoint/inspect'
+takeoffSub = '/onboard/setpoint/takeoff'
+
 
 homeSub = '/onboard/position/home'
 homeReqPub = '/onboard/request/gpsHome'
@@ -32,17 +34,21 @@ class msgControl():
     def __init__(self):
         rospy.init_node('msgControl')
         self.rate = rospy.Rate(20)
+        self.enable = False
+        
         self.sysState = None
         self.homePos = None
-        self.enable = False
+        self.gotMission = False
 
         self.loiterMsg = mavSP.PoseStamped()
         self.pylonNavMsg = None
+        self.takeoffMsg = None
+
         self.setpoint = mavSP.PoseStamped()
         self.curLocalPos = mavSP.PoseStamped()
         
-        self.setpointPub = mavSP.get_pub_position_local(queue_size=5)
-        self.wpCompletePub = rospy.Publisher(wpCompleteTopic, Bool, queue_size=1)
+        self.setpointPub = mavSP.get_pub_position_local(queue_size=1)
+        self.wpCompletePub = rospy.Publisher(wpCompleteTopic, Int8, queue_size=1)
         self.homeGPSPub = rospy.Publisher(homeReqPub, Bool, queue_size=1) 
 
         # root_framework Subs
@@ -57,6 +63,7 @@ class msgControl():
         rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.pilot_loiterMsg)
         rospy.Subscriber(missionSub, NavSatFix, self.pilot_pylonNavMsg)
         rospy.Subscriber(inspectSub,line_control_info, self._onInspectPosUpdate)
+        rospy.Subscriber(takeoffSub, mavSP.PoseStamped, self.pilot_takeoffMsg)
 
     def handlerEnable(self,msg):
         if msg.data == True:
@@ -80,7 +87,12 @@ class msgControl():
 
     def onStateChange(self, msg):
         if msg.data == 'mission':
+            self.pylonNavMsg = None
+            self.gotMission = False
             self.sysState = 'missionHold'
+        if msg.data == 'idle':
+            self.enable = False
+            print("messageHandler Disabled")
         else:
             self.sysState = msg.data
 
@@ -99,6 +111,11 @@ class msgControl():
     def pilot_loiterMsg(self, msg):
         self.loiterMsg = msg
 
+    def pilot_takeoffMsg(self, msg):
+        if self.takeoffMsg == None:
+            self.preTakeoff = True
+        self.takeoffMsg = msg
+
     def pilot_pylonNavMsg(self, msg):
         x,y,z = self.gpsToLocal(msg)
         tmpSP = mavSP.PoseStamped()
@@ -108,7 +125,9 @@ class msgControl():
         tmpSP.pose.orientation =  self.curLocalPos.pose.orientation
 
         self.pylonNavMsg = tmpSP
+
         self.sysState = 'mission'
+        self.gotMission = True
 
     def _onInspectPosUpdate(self,msg):
         
@@ -125,16 +144,23 @@ class msgControl():
             outwardMsg = self.loiterMsg
 
         if self.sysState == 'mission':
-            outwardMsg = self.pylonNavMsg
+            if (self.pylonNavMsg == None) or (self.gotMission == False):
+                outwardMsg = self.loiterMsg
+            else:
+                outwardMsg = self.pylonNavMsg
 
         if self.sysState == 'inspect':
             pass
-        
+
+        if (self.sysState == 'takeoff') or (self.sysState == 'land'):
+            outwardMsg == self.takeoffMsg
+
         self.setpoint = outwardMsg
 
 
 # Waypoint checking
     def waypointCheck(self):
+        
         if self.homePos == None:
             print("unable: no home position")
         else:
@@ -143,14 +169,25 @@ class msgControl():
             altCheck, setPointPos = self.altitudeCheck()
             proxCheck = self.proximityCheck()
             self._pubMsg(setPointPos, self.setpointPub)
-            if self.sysState != 'loiter':
-                if self.sysState != 'missionHold':
-                    if altCheck and proxCheck:
-                        self.wpCompletePub.publish(True) 
+
+            wpStatus = 0
+            if altCheck:
+                wpStatus = 1 # correct Altitude
+                if proxCheck:
+                    wpStatus = 2
+            
+            acceptedStates = "mission, inspect"
+            if (self.sysState in acceptedStates):
+                if self.sysState == 'mission' and self.gotMission:
+                    self.wpCompletePub.publish(wpStatus)
+
 
     def altitudeCheck(self):
         preMsg = mavSP.PoseStamped()
         altCheck = False
+
+        # print "curPose:", self.curLocalPos.pose
+        # print "setPose:", self.setpoint.pose
         if abs(self.curLocalPos.pose.position.z - self.setpoint.pose.position.z) > 0.5:
             preMsg.pose.position.x = self.curLocalPos.pose.position.x
             preMsg.pose.position.y = self.curLocalPos.pose.position.y

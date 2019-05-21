@@ -9,7 +9,7 @@ import mavros.command as mavCMD
 import mavros.setpoint as mavSP
 
 import mavros_msgs.msg
-from std_msgs.msg import (String, Bool)
+from std_msgs.msg import (String, Bool, Int8)
 from sensor_msgs.msg import (NavSatFix)
 # from pylon_locator.msg import (pylonList, pylonDat)
 from inspec_msg.msg import (pilot_cb, pylonList, pylonDat)
@@ -39,7 +39,7 @@ class missionPilot():
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
         rospy.Subscriber(pylonListSub, pylonList, self.onPylonListUpdate)
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
-        rospy.Subscriber(wpComplete, Bool, self.onWPArrival)
+        rospy.Subscriber(wpComplete, Int8, self.onWPArrival)
 
         self.wpPub = rospy.Publisher(targetWP, NavSatFix, queue_size=1)
         self.towerRequest = rospy.Publisher(pylonRequest, Bool, queue_size=1)
@@ -50,13 +50,15 @@ class missionPilot():
         psMsg.pilotName = 'mission'
         psMsg.complete = state
         self.pilotStatePub.publish(psMsg)
-    # ROS Subscribers
+        
+        # ROS Subscribers
     def onStateChange(self, msg):
         if msg.data == 'mission':
             print ('mission Enable')
             self.enable = True
             self.runMission()
         else:
+            print('mission Disable')
             self.enable = False
         pass
     
@@ -70,9 +72,10 @@ class missionPilot():
         self.dronePos = msg
 
     def onWPArrival(self, msg):
-        if msg.data == True and self.coordSent:
+        if msg.data == 2 and self.coordSent:
+            # print("At Desination!")
             self.sendState(True)
-
+        pass
     def runMission(self):
         self.coordSent = False
         self.navToPylon()
@@ -149,7 +152,10 @@ class missionPilot():
             wpTarget.longitude = WPADJ[1]
             wpTarget.altitude = 10.0
             self.wpPub.publish(wpTarget)
+            print("coordSent")
+
             self.coordSent = True
+
         else:
             print("Warning: no pylons found! loitering...")
             self.sendState(False)

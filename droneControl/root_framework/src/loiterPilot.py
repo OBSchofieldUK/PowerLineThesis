@@ -85,9 +85,13 @@ class loiterPilot():
                     self.loiterPos.pose.position.x = 0
                     self.loiterPos.pose.position.y = 20
                     self.loiterPos.pose.position.z = 7.5
+                if keypress == 'h':
+                    self.loiterPos.pose.position.x = 0
+                    self.loiterPos.pose.position.y = 0
+                    self.loiterPos.pose.position.z = 2
 
         else:
-            options = "wasdqezx"        #options as above
+            options = "wasdqezxh"        #options as above
             if keypress in options:  
                 print("warn: loiterpilot not enabled")
     
@@ -97,8 +101,8 @@ class loiterPilot():
             self.loiterPos = self.curPos
             self.enable = True
         else:
-            # if self.enable:
-                # print('loiter disabled')
+            if self.enable:
+                print('loiter disabled')
             self.enable = False
         
     def onPositionChange(self,msg):

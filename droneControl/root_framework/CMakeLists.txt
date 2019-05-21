@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   mavros
   rospy
   std_msgs
+  inspec_msg
 )
 
 ## System dependencies are found with CMake's conventions
