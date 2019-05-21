@@ -22,8 +22,6 @@ onB_StateSub = '/onboard/state'
 loiterSub = '/onboard/setpoint/loiter'
 missionSub = '/onboard/setpoint/mission'
 inspectSub = '/onboard/setpoint/inspect'
-takeoffSub = '/onboard/setpoint/takeoff'
-
 
 homeSub = '/onboard/position/home'
 homeReqPub = '/onboard/request/gpsHome'
@@ -42,7 +40,6 @@ class msgControl():
 
         self.loiterMsg = mavSP.PoseStamped()
         self.pylonNavMsg = None
-        self.takeoffMsg = None
 
         self.setpoint = mavSP.PoseStamped()
         self.curLocalPos = mavSP.PoseStamped()
@@ -63,7 +60,6 @@ class msgControl():
         rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.pilot_loiterMsg)
         rospy.Subscriber(missionSub, NavSatFix, self.pilot_pylonNavMsg)
         rospy.Subscriber(inspectSub,line_control_info, self._onInspectPosUpdate)
-        rospy.Subscriber(takeoffSub, mavSP.PoseStamped, self.pilot_takeoffMsg)
 
     def handlerEnable(self,msg):
         if msg.data == True:
@@ -111,11 +107,6 @@ class msgControl():
     def pilot_loiterMsg(self, msg):
         self.loiterMsg = msg
 
-    def pilot_takeoffMsg(self, msg):
-        if self.takeoffMsg == None:
-            self.preTakeoff = True
-        self.takeoffMsg = msg
-
     def pilot_pylonNavMsg(self, msg):
         x,y,z = self.gpsToLocal(msg)
         tmpSP = mavSP.PoseStamped()
@@ -152,11 +143,7 @@ class msgControl():
         if self.sysState == 'inspect':
             pass
 
-        if (self.sysState == 'takeoff') or (self.sysState == 'land'):
-            outwardMsg == self.takeoffMsg
-
         self.setpoint = outwardMsg
-
 
 # Waypoint checking
     def waypointCheck(self):
