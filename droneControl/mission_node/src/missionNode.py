@@ -58,8 +58,7 @@ class missionPilot():
             self.enable = True
             self.runMission()
         else:
-            if self.enable:
-                print('mission Disable')
+            print('mission Disable')
             self.enable = False
         pass
     

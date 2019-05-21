@@ -52,23 +52,12 @@ class loiterPilot():
 
         yaw += radians(angle)
         orientAdj = quaternion_from_euler(0, 0, yaw)
-        print(degrees(yaw))
+
         self.loiterPos.pose.orientation.x = orientAdj[0]
         self.loiterPos.pose.orientation.y = orientAdj[1]
         self.loiterPos.pose.orientation.z = orientAdj[2]
         self.loiterPos.pose.orientation.w = orientAdj[3]
 
-    def setBearing(self, bearing = 0.0):
-        
-        orientAdj = quaternion_from_euler(0, 0, radians(bearing))
-
-        desiredBearing = mavSP.PoseStamped()
-        desiredBearing.pose.orientation.x = orientAdj[0]
-        desiredBearing.pose.orientation.y = orientAdj[1]
-        desiredBearing.pose.orientation.z = orientAdj[2]
-        desiredBearing.pose.orientation.w = orientAdj[3]
-
-        return desiredBearing.pose.orientation
 
     def _cb_onKeypress(self, msg):
         keypress = str(chr(msg.data))
@@ -96,13 +85,10 @@ class loiterPilot():
                     self.loiterPos.pose.position.x = 0
                     self.loiterPos.pose.position.y = 20
                     self.loiterPos.pose.position.z = 7.5
-
                 if keypress == 'h':
                     self.loiterPos.pose.position.x = 0
                     self.loiterPos.pose.position.y = 0
-                    self.loiterPos.pose.position.z = 7.5
-                    self.loiterPos.pose.orientation = self.setBearing(0.0)
-                    
+                    self.loiterPos.pose.position.z = 2
 
         else:
             options = "wasdqezxh"        #options as above
