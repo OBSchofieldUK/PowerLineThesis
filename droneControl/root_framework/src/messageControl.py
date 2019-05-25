@@ -66,10 +66,10 @@ class msgControl():
             print("messageHandler Enabled")
             self.enable = True
         if msg.data == False:
-            if self.curLocalPos.pose.position.z > 0.1:
-                print("message Handler: unable to disable - airbourne")
-                self.sysState = 'loiter'
-            else:
+            # if self.curLocalPos.pose.position.z > 0.1:
+                # print("message Handler: unable to disable - airbourne")
+                # self.sysState = 'loiter'
+            # else:
                 print("messageHandler Disabled")
                 self.enable = False
 

@@ -132,7 +132,14 @@ class droneCore():
             # self.homeCoord = self.gpsPos
             # self.homePub.publish(self.homeCoord)
             pass
+            
+        if keypress == 'c':
+            self.messageHandlerPub.publish(True)
+            self.setState('loiter')
 
+        if keypress == 'i':
+            self.setState('inspect')
+            self.messageHandlerPub.publish(False)
 
     def _pilotStateUpdate(self,msg):
         if msg.complete == False:

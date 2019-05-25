@@ -3,8 +3,8 @@
 
 import math
 import rospy
-import mavros 
-import utm 
+import mavros
+import utm
 import mavros.command as mavCMD
 import mavros.setpoint as mavSP
 
@@ -16,14 +16,16 @@ from inspec_msg.msg import (pilot_cb, pylonList, pylonDat)
 
 mavros.set_namespace('mavros')
 
-onB_StateSub    = '/onboard/state'
-pylonRequest    = '/onboard/pylonRequest'
-pylonListSub      = '/onboard/pylonList'
+onB_StateSub = '/onboard/state'
+pylonRequest = '/onboard/pylonRequest'
+pylonListSub = '/onboard/pylonList'
 
 targetWP = '/onboard/setpoint/mission'
 wpComplete = '/onboard/check/WPSuccess'
 
 pilotStatePub = '/onboard/check/pilotState'
+
+
 class missionPilot():
     def __init__(self):
         rospy.init_node('missionPilot')
@@ -33,24 +35,26 @@ class missionPilot():
         self.dronePos = NavSatFix()
         self.pylonList = []
         self.received = False
-        self.pylonOffset = 25 # meters away from the power pylon 
+        self.pylonOffset = 25  # meters away from the power pylon
         self.coordSent = False
 
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
         rospy.Subscriber(pylonListSub, pylonList, self.onPylonListUpdate)
-        rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
+        rospy.Subscriber(mavros.get_topic('global_position',
+                                          'global'), NavSatFix, self.cb_onPosUpdate)
         rospy.Subscriber(wpComplete, Int8, self.onWPArrival)
 
         self.wpPub = rospy.Publisher(targetWP, NavSatFix, queue_size=1)
         self.towerRequest = rospy.Publisher(pylonRequest, Bool, queue_size=1)
-        self.pilotStatePub = rospy.Publisher(pilotStatePub, pilot_cb, queue_size=1)
+        self.pilotStatePub = rospy.Publisher(
+            pilotStatePub, pilot_cb, queue_size=1)
 
     def sendState(self, state):
         psMsg = pilot_cb()
         psMsg.pilotName = 'mission'
         psMsg.complete = state
         self.pilotStatePub.publish(psMsg)
-        
+
         # ROS Subscribers
     def onStateChange(self, msg):
         if msg.data == 'mission':
@@ -58,12 +62,12 @@ class missionPilot():
             self.enable = True
             self.runMission()
         else:
-            print('mission Disable')
+            if self.enable:
+                print('mission Disable')
             self.enable = False
         pass
-    
 
-    def onPylonListUpdate(self,msg):
+    def onPylonListUpdate(self, msg):
         self.pylonList = msg.lists
         self.received = True
         pass
@@ -76,6 +80,7 @@ class missionPilot():
             # print("At Desination!")
             self.sendState(True)
         pass
+
     def runMission(self):
         self.coordSent = False
         self.navToPylon()
@@ -83,6 +88,7 @@ class missionPilot():
     Calculations for 
         - finding nearest pylon to a reference point (input UTM Coords)
     '''
+
     def findNearestPylon(self, refUTM):
 
         nearestPylon = []
@@ -113,20 +119,21 @@ class missionPilot():
         dist = -1
         deltaEast = utmPosA[0]-utmPosB[0]
         deltaNorth = utmPosA[1]-utmPosB[1]
-        if deltaNorth !=0:
+        if deltaNorth != 0:
             dist = math.sqrt(deltaNorth**2 + deltaEast**2)
         return deltaNorth, deltaEast, dist
- 
+
     def calcOrientation(self, pylonidx):
-        targUTM = utm.from_latlon(self.pylonList[pylonidx].lat, self.pylonList[pylonidx].lon)
+        targUTM = utm.from_latlon(
+            self.pylonList[pylonidx].lat, self.pylonList[pylonidx].lon)
         _, adjPylon = self.findNearestPylon(targUTM)
 
         nxtUTM = utm.from_latlon(adjPylon.lat, adjPylon.lon)
-        northing, easting,_ = self.calcDist(targUTM, nxtUTM)
+        northing, easting, _ = self.calcDist(targUTM, nxtUTM)
         orientation = math.degrees(math.atan(easting/northing))
         offsetNorth = -self.pylonOffset*math.cos(180-(orientation))
         offsetEast = self.pylonOffset*math.sin(180-(orientation))
-        
+
         # print (orientation, offsetNorth, offsetEast)
         return orientation, offsetNorth, offsetEast
 
@@ -136,16 +143,18 @@ class missionPilot():
 
         while not (self.received):
             self.rate.sleep()
-        
-        if len(self.pylonList) > 0 :
-            utmDronePos = utm.from_latlon(self.dronePos.latitude, self.dronePos.longitude)  
+
+        if len(self.pylonList) > 0:
+            utmDronePos = utm.from_latlon(
+                self.dronePos.latitude, self.dronePos.longitude)
             nearidx, nextWP = self.findNearestPylon(utmDronePos)
             _, wpOffN, wpOffE = self.calcOrientation(nearidx)
-            
+
             utmNxtWP = utm.from_latlon(nextWP.lat, nextWP.lon)
             nxtWPAdjN = utmNxtWP[0] + wpOffN
             nxtWPAdjE = utmNxtWP[1] + wpOffE
-            WPADJ = utm.to_latlon(nxtWPAdjN, nxtWPAdjE, utmNxtWP[2], utmNxtWP[3])
+            WPADJ = utm.to_latlon(nxtWPAdjN, nxtWPAdjE,
+                                  utmNxtWP[2], utmNxtWP[3])
             print("Waypoint to pylon is:", WPADJ)
             wpTarget = NavSatFix()
             wpTarget.latitude = WPADJ[0]
@@ -159,16 +168,16 @@ class missionPilot():
         else:
             print("Warning: no pylons found! loitering...")
             self.sendState(False)
-        
+
     def run(self):
         while not(rospy.is_shutdown()):
             if self.enable:
-                
+
                 pass
             self.rate.sleep()
         pass
 
+
 if __name__ == "__main__":
     mp = missionPilot()
     mp.run()
-
