@@ -58,8 +58,7 @@ class loiterPilot():
         # self.loiterPos.pose.orientation.y = orientAdj[1]
         # self.loiterPos.pose.orientation.z = orientAdj[2]
         # self.loiterPos.pose.orientation.w = orientAdj[3]
-        self.loiterPos.pose.orientation = Quaternion(*orientAdj
-        )
+        self.loiterPos.pose.orientation = Quaternion(*orientAdj)
     def setBearing(self, bearing=0.0):
 
         orientAdj = quaternion_from_euler(0, 0, radians(bearing))

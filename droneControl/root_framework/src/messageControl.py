@@ -40,6 +40,7 @@ class msgControl():
 
         self.loiterMsg = mavSP.PoseStamped()
         self.pylonNavMsg = None
+        self.inspectMsg = None
 
         self.setpoint = mavSP.PoseStamped()
         self.curLocalPos = mavSP.PoseStamped()
@@ -59,18 +60,19 @@ class msgControl():
         # pilot subs
         rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.pilot_loiterMsg)
         rospy.Subscriber(missionSub, NavSatFix, self.pilot_pylonNavMsg)
-        rospy.Subscriber(inspectSub,line_control_info, self._onInspectPosUpdate)
+        rospy.Subscriber(inspectSub,mavSP.PoseStamped, self._onInspectPosUpdate)
 
     def handlerEnable(self,msg):
         if msg.data == True:
             print("messageHandler Enabled")
             self.enable = True
         if msg.data == False:
-            # if self.curLocalPos.pose.position.z > 0.1:
-                # print("message Handler: unable to disable - airbourne")
-                # self.sysState = 'loiter'
-            # else:
-                print("messageHandler Disabled")
+            if self.curLocalPos.pose.position.z > 0.1:
+                print("message Handler: unable to disable - airbourne")
+                self.sysState = 'loiter'
+            else:
+                if self.enable:
+                    print("messageHandler Disabled")
                 self.enable = False
 
     def _pubMsg(self, msg, topic):
@@ -121,7 +123,7 @@ class msgControl():
         self.gotMission = True
 
     def _onInspectPosUpdate(self,msg):
-        
+        self.inspectMsg = msg
         pass
 
     def get_pilotMsg(self):
@@ -141,6 +143,7 @@ class msgControl():
                 outwardMsg = self.pylonNavMsg
 
         if self.sysState == 'inspect':
+            outwardMsg = self.inspectMsg
             pass
 
         self.setpoint = outwardMsg

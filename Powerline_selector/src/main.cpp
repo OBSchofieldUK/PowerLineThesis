@@ -86,7 +86,7 @@ int main(int argc, char* argv[]){
     camTdrone = convert::ToTransform(cam_setting.XYZ_camTdrone,cam_setting.RPY_camTdrone);
 
     ros::Subscriber powerline_sub = nh.subscribe("/inspec/daq/Estimator/lines3d",1,powerline_handler);
-    powerline_position_pub = nh.advertise<inspec_msg::line_control_info>("/onboard/setpoint/inspect",1);
+    powerline_position_pub = nh.advertise<inspec_msg::line_control_info>("/onboard/feedback/powerlinePosition",1);
 
     ros::spin();
     return 0;

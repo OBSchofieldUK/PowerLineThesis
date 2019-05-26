@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import math
+from math import sqrt, radians, hypot
 import rospy
 import mavros
 import utm
@@ -12,33 +12,47 @@ from mavros_msgs.msg import (AttitudeTarget)
 from std_msgs.msg import (String, Bool, Header)
 from geometry_msgs.msg import Quaternion, Vector3
 from tf.transformations import (euler_from_quaternion, quaternion_from_euler)
-
+from inspec_msg.msg import (pilot_cb, line_control_info)
 mavros.set_namespace('mavros')
 
 onB_StateSub = '/onboard/state'
-targetPub = '/onboard/setpoint/inspection'
+targetPub = '/onboard/setpoint/inspect'
+powerlinePosSub = '/onboard/feedback/powerlinePosition'
 
+startPos = mavSP.PoseStamped()
 
 class inspectPilot():
     def __init__(self):
         rospy.init_node('inspectPilot')
         self.rate = rospy.Rate(20)
         self.enable = False
-        self.count = 0
+        self.pilotReady = False
+        self.lineFound = False
+        
+        self.startpos = mavSP.PoseStamped()
         self.curLocalPos = None
+        self.lineTarget = None
+        self.targetPos = None
 
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
-        rospy.Subscriber(mavros.get_topic('local_position',
-                                          'pose'), mavSP.PoseStamped, self.onPosUpdate)
-        # rospy.Subscriber()
-        self.attiPub = rospy.Publisher(
-            'mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
+        rospy.Subscriber(mavros.get_topic('local_position','pose'), mavSP.PoseStamped, self.onPosUpdate)
+        rospy.Subscriber(powerlinePosSub, line_control_info, self.onLineUpdate)
+
+
+        self.attiPub = rospy.Publisher('mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
 
         self.inpectPosSP = rospy.Publisher(targetPub, mavSP.PoseStamped, queue_size=1)
+
+    # message handlers 
     def onPosUpdate(self, msg):
         self.curLocalPos = msg
         pass
 
+    def onLineUpdate(self, msg):
+        if self.lineFound==False:
+            self.lineFound = True
+        self.lineTarget = msg
+    
     def _pubMsg(self, msg, topic):
         msg.header = mavros.setpoint.Header(
             frame_id="base_footprint",
@@ -51,11 +65,22 @@ class inspectPilot():
         if msg.data == 'inspect':
             self.enable = True
             print('inspection Enabled')
+            self.startLanding()
         else:
             if self.enable:
                 print('inspection Disabled')
             self.enable = False
 
+    # Math Functions
+    def calcDist2D(self, posA, posB):
+        deltaX = posA.pose.position.x - posB.pose.position.x 
+        deltaY = posA.pose.position.y - posB.pose.position.y
+        dist = hypot(deltaX, deltaY)
+        distAlt = sqrt(deltaX**2+deltaY**2)
+        print ("dX: %.2f, dY: %.2f, Dist: %.2f, Dist2: %.2f, " %(deltaX, deltaY, dist, distAlt))
+        return deltaX, deltaY, dist
+
+    # tester for attitude commands 
     def pubTestAtti(self):
         attiMsg = AttitudeTarget()
         attiMsg.body_rate = Vector3()
@@ -67,120 +92,95 @@ class inspectPilot():
 
         self._pubMsg(attiMsg, self.attiPub)
 
+    # GPS inspection node: Wont work in real life, but good for proof of concept
+    def startLanding(self):
+        # global startPos
+        self.lineFound = False
+        print('pause')
+        d = rospy.Duration(2.0)
+        rospy.sleep(d)
+
+        curPos = self.curLocalPos
+
+        self.pilotReady = True
+
+        print('pilotReady')
+        #step 1, advance towards line 
+        startingPosition = curPos
+
+        target = mavSP.PoseStamped()
+        target.pose.position = startingPosition.pose.position
+        target.pose.orientation = startingPosition.pose.orientation 
+        target.pose.position.y += 0.25
+        # _,_,distTravelled = self.calcDist2D(startingPosition, target)
+        self.targetPos = target
+        distTravelled = 0
+
+        while (distTravelled < 15):
+
+            # print("Start:", startingPosition.pose)
+            # print("Targ:", self.targetPos)
+
+            self.targetPos.pose.position.y += 0.2
+            
+            d = rospy.Duration(0.2)
+            rospy.sleep(d)
+            
+            # _,_,distTravelled = self.calcDist2D(startingPosition, self.targetPos)
+
+            if self.lineFound:
+                print("lineFound!")
+                self.targetPos.pose.position.y += 0.5
+                break        
+        
+        #step2, when detected, align yaw (+xy)
+        count = 0
+        while(self.enable==True):
+            
+            self.targetPos.pose.position.y -= (self.lineTarget.y * 0.1)
+            self.targetPos.pose.orientation = Quaternion(*quaternion_from_euler(0,0, radians(-self.lineTarget.Yaw)))
+            if (self.lineTarget.y < 0.05):
+                count += 1
+            d = rospy.Duration(0.2)
+            rospy.sleep(d)
+
+            if self.enable != True or count > 40:
+                break
+
+        #step3, after timePeriod, advance up to specified height
+
+        while(self.lineTarget.z > 0.15):
+            if self.lineTarget.z > 2:
+                self.targetPos.pose.position.y -= (self.lineTarget.y * 0.15)
+                if self.lineTarget.y < 0.1:
+                    self.targetPos.pose.position.z += 0.1
+            elif self.lineTarget.z < 1:
+                self.targetPos.pose.position.y -= (self.lineTarget.y * 0.1)
+                if self.lineTarget.y < 0.05:
+                    self.targetPos.pose.position.z += 0.05
+            else:
+                if self.lineTarget.z < 0.5:
+                    self.targetPos.pose.position.y -= (self.lineTarget.y * 0.1)
+                    if self.lineTarget.y < 0.025:
+                        self.targetPos.pose.position.z += 0.015
+            print self.targetPos.pose.position.z, self.targetPos.pose.position.y
+
+            d = rospy.Duration(0.2)
+            rospy.sleep(d)
+        pass
+        print("done")
+        
     def run(self):
         while not(rospy.is_shutdown()):
             if self.enable:
-                self.pubTestAtti()
-                pass
+                if self.pilotReady:
+                    self._pubMsg(self.targetPos, self.inpectPosSP)
+            else:
+                if self.curLocalPos != None:
+                    self._pubMsg(self.curLocalPos, self.inpectPosSP)
             self.rate.sleep()
         pass
-
 
 if __name__ == "__main__":
     ip = inspectPilot()
     ip.run()
-
-
-# class MavrosOffboardAttctlTest(MavrosTestCommon):
-#     """
-#     Tests flying in offboard control by sending attitude and thrust setpoints
-#     via MAVROS.
-#     For the test to be successful it needs to cross a certain boundary in time.
-#     """
-
-#     def setUp(self):
-#         super(MavrosOffboardAttctlTest, self).setUp()
-
-#         self.att = AttitudeTarget()
-
-#         self.att_setpoint_pub = rospy.Publisher(
-#             'mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
-
-#         # send setpoints in seperate thread to better prevent failsafe
-#         self.att_thread = Thread(target=self.send_att, args=())
-#         self.att_thread.daemon = True
-#         self.att_thread.start()
-
-#     def tearDown(self):
-#         super(MavrosOffboardAttctlTest, self).tearDown()
-
-#     #
-#     # Helper methods
-#     #
-#     def send_att(self):
-#         rate = rospy.Rate(10)  # Hz
-#         self.att.body_rate = Vector3()
-#         self.att.header = Header()
-#         self.att.header.frame_id = "base_footprint"
-#         self.att.orientation = Quaternion(*quaternion_from_euler(-0.25, 0.5,
-#                                                                  0))
-#         self.att.thrust = 0.7
-#         self.att.type_mask = 7  # ignore body rate
-
-#         while not rospy.is_shutdown():
-#             self.att.header.stamp = rospy.Time.now()
-#             self.att_setpoint_pub.publish(self.att)
-#             try:  # prevent garbage in console output when thread is killed
-#                 rate.sleep()
-#             except rospy.ROSInterruptException:
-#                 pass
-
-#     #
-#     # Test method
-#     #
-#     def test_attctl(self):
-#         """Test offboard attitude control"""
-#         # boundary to cross
-#         boundary_x = 200
-#         boundary_y = 100
-#         boundary_z = 50
-
-#         # make sure the simulation is ready to start the mission
-#         self.wait_for_topics(60)
-#         self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
-#                                    10, -1)
-
-#         self.log_topic_vars()
-#         self.set_mode("OFFBOARD", 5)
-#         self.set_arm(True, 5)
-
-#         rospy.loginfo("run mission")
-#         rospy.loginfo("attempting to cross boundary | x: {0}, y: {1}, z: {2}".
-#                       format(boundary_x, boundary_y, boundary_z))
-#         # does it cross expected boundaries in 'timeout' seconds?
-#         timeout = 90  # (int) seconds
-#         loop_freq = 2  # Hz
-#         rate = rospy.Rate(loop_freq)
-#         crossed = False
-#         for i in xrange(timeout * loop_freq):
-#             if (self.local_position.pose.position.x > boundary_x and
-#                     self.local_position.pose.position.y > boundary_y and
-#                     self.local_position.pose.position.z > boundary_z):
-#                 rospy.loginfo("boundary crossed | seconds: {0} of {1}".format(
-#                     i / loop_freq, timeout))
-#                 crossed = True
-#                 break
-
-#             try:
-#                 rate.sleep()
-#             except rospy.ROSException as e:
-#                 self.fail(e)
-
-#         self.assertTrue(crossed, (
-#             "took too long to cross boundaries | current position x: {0:.2f}, y: {1:.2f}, z: {2:.2f} | timeout(seconds): {3}".
-#             format(self.local_position.pose.position.x,
-#                    self.local_position.pose.position.y,
-#                    self.local_position.pose.position.z, timeout)))
-
-#         self.set_mode("AUTO.LAND", 5)
-#         self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
-#                                    90, 0)
-#         self.set_arm(False, 5)
-
-
-# if __name__ == '__main__':
-#     import rostest
-#     rospy.init_node('test_node', anonymous=True)
-
-#     rostest.rosrun(PKG, 'mavros_offboard_attctl_test',
-#                    MavrosOffboardAttctlTest)
