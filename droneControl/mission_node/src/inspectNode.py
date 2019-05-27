@@ -65,11 +65,21 @@ class inspectPilot():
         if msg.data == 'inspect':
             self.enable = True
             print('inspection Enabled')
-            self.startLanding()
+            self.lineTarget = None
+            self.targetPos = self.curLocalPos
+            
+            self.lineFound = False
+
+
+            # self.advanceToLine(self.curLocalPos)
+            # self.pilotReady= True
+            self.advanceToLine()
+            self.alignToLine()
         else:
             if self.enable:
                 print('inspection Disabled')
             self.enable = False
+            self.pilotReady = False
 
     # Math Functions
     def calcDist2D(self, posA, posB):
@@ -77,7 +87,7 @@ class inspectPilot():
         deltaY = posA.pose.position.y - posB.pose.position.y
         dist = hypot(deltaX, deltaY)
         distAlt = sqrt(deltaX**2+deltaY**2)
-        print ("dX: %.2f, dY: %.2f, Dist: %.2f, Dist2: %.2f, " %(deltaX, deltaY, dist, distAlt))
+        # print ("dX: %.2f, dY: %.2f, Dist: %.2f, Dist2: %.2f, " %(deltaX, deltaY, dist, distAlt))
         return deltaX, deltaY, dist
 
     # tester for attitude commands 
@@ -93,24 +103,95 @@ class inspectPilot():
         self._pubMsg(attiMsg, self.attiPub)
 
     # GPS inspection node: Wont work in real life, but good for proof of concept
+
+    def advanceToLine(self):
+        stepSize = 0.2
+        step = self.curLocalPos
+        step.pose.position.y += stepSize               
+        # _,_,dist = self.calcDist2D(self.curLocalPos, step)
+        # print(dist)
+        numSteps=int(20/stepSize)
+        self.targetPos = step
+        self.pilotReady = True
+        print("starting search")
+
+        for i in range(1, numSteps):
+            step.pose.position.y += stepSize
+            # _, _, dist = self.calcDist2D(self.curLocalPos, step)
+            d = rospy.Duration(0.2)
+            rospy.sleep(d)
+            print(i)
+            self.targetPos = step
+            if self.lineFound:
+                break
+
+        if not self.lineFound:
+            print("WARN: line not found :( ")
+        else:
+            print("line found!")
+            self.targetPos.pose.position.y += 0.5
+
+    def alignToLine(self):
+        pitchGain = 0.1
+        print("Line Alignment")
+        if self.targetPos == None:
+            self.targetPos = self.curLocalPos
+
+        if self.lineFound and self.lineTarget.trusted:
+            yaw = self.lineTarget.Yaw
+            pitchError = self.lineTarget.y
+            if yaw < 0:
+                self.targetPos.pose.orientation = Quaternion(*quaternion_from_euler(0,0,radians(yaw)))
+            else:
+                self.targetPos.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, radians(-yaw)))
+
+            if abs(pitchError) > 0.5:
+                pitchGain = 0.15
+            else: 
+                pitchGain = 0.1
+            timeout = rospy.Time.now()
+            count = 0
+            timeoutCheck = True
+            while (timeout - rospy.Time.now()) < rospy.Duration(30):
+                pitchError = self.lineTarget.y
+                if abs(pitchError) > 0.5:
+                    pitchGain = 0.15
+                else:
+                    pitchGain = 0.1
+                
+                d = rospy.Duration(0.2) 
+                rospy.sleep(d)
+                
+                self.targetPos.pose.position.y -= pitchError * pitchGain
+
+                if abs(pitchError) < 0.075:
+                    count +=1
+                    # print(count)
+                if count > 25:
+                    timeoutCheck = False
+                    break
+            if timeoutCheck:
+                print("timeout")
+
     def startLanding(self):
         # global startPos
         self.lineFound = False
+
         print('pause')
         d = rospy.Duration(2.0)
         rospy.sleep(d)
-
         curPos = self.curLocalPos
 
         self.pilotReady = True
 
+  
         print('pilotReady')
         #step 1, advance towards line 
         startingPosition = curPos
 
         target = mavSP.PoseStamped()
         target.pose.position = startingPosition.pose.position
-        target.pose.orientation = startingPosition.pose.orientation 
+        target.pose.orientation = curPos.pose.orientation 
         target.pose.position.y += 0.25
         # _,_,distTravelled = self.calcDist2D(startingPosition, target)
         self.targetPos = target
@@ -138,6 +219,7 @@ class inspectPilot():
         while(self.enable==True):
             
             self.targetPos.pose.position.y -= (self.lineTarget.y * 0.1)
+            # if self.lineTarget:
             self.targetPos.pose.orientation = Quaternion(*quaternion_from_euler(0,0, radians(-self.lineTarget.Yaw)))
             if (self.lineTarget.y < 0.05):
                 count += 1

@@ -153,7 +153,7 @@ void Line_handler(inspec_msg::line2d_array msg){
         }
     }
     
-    cv::imshow("test",img);
+    // cv::imshow("test",img);
     cv::waitKey(1);
 }
 void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
@@ -183,7 +183,7 @@ int main(int argc, char **argv){
     Matched_pub = nh.advertise<inspec_msg::matched_lidar_data_array>("/inspec/daq/lidarDat/Matched",1);
 
     cv::Mat BLACK(camera_setting.pixel_height, camera_setting.pixel_width, CV_8UC3, cv::Scalar(0,0,0));
-    ShowImage("test",BLACK);
+    // ShowImage("test",BLACK);
     cv::waitKey(1);
     ros::spin();
 
