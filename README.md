@@ -43,6 +43,9 @@ The Rostopics used in the project
 /webcam/image_raw               #Sends the Image
 ```
 
+# PowerLine Simulation 
+Simulation Assets have been configured for use with PX4/Gazebo for debugging. To install, look under the Simulation Assets Folder. 
+
 # Copyright
 
 Copyright (c) 2018
