@@ -488,6 +488,5 @@ namespace settings{
         os << "Chip:  " << cam.Chip_size_x << " x " << cam.Chip_size_y << " - size: " << cam.Chip_size_mm << std::endl;
         os << "d:     " << cam.d << std::endl;
         os << "FOV:   " << cam.FOV << std::endl;
-
     }
 }
