@@ -36,7 +36,12 @@ void pose_handler(geometry_msgs::PoseStamped msg){
     pose = msg;
 }
 void powerLine_handler(inspec_msg::line_control_info msg){
-    logfile << msg.x << "," << msg.y << "," << msg.z << "," << msg.Yaw<< "," << int(msg.trusted) << ",";
+    logfile << msg.x << "," << msg.y << "," << msg.z << "," << msg.Yaw<< ",";
+    if(msg.trusted){
+        logfile << 1 << ",";
+    else{
+        logfile << 0 << ",";
+    }
     logfile << pose.pose.position.x << ",";
     logfile << pose.pose.position.y << ","; 
     logfile << pose.pose.position.z << ",";

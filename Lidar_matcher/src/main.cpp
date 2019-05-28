@@ -175,8 +175,6 @@ int main(int argc, char **argv){
     rw::math::RPY<> a(camTlidar.R());
     cout << "RPY: " << math::rad2deg(a[0]) << ", " << math::rad2deg(a[1]) << ", " << math::rad2deg(a[2]) << endl;  
 
-
-
     ros::Subscriber lidar_data_sub = nh.subscribe("/inspec/daq/lidarDat",1,Lidar_data_handler);
     ros::Subscriber line_sub = nh.subscribe("/inspec/daq/linedetector/lines2d",1,Line_handler);
 
@@ -186,7 +184,6 @@ int main(int argc, char **argv){
     ShowImage("test",BLACK);
     cv::waitKey(1);
     ros::spin();
-
 
     return 0;
 }
