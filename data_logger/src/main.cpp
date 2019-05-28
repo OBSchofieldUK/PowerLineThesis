@@ -39,7 +39,7 @@ void powerLine_handler(inspec_msg::line_control_info msg){
     logfile << msg.x << "," << msg.y << "," << msg.z << "," << msg.Yaw<< ",";
     if(msg.trusted){
         logfile << 1 << ",";
-    else{
+    }else{
         logfile << 0 << ",";
     }
     logfile << pose.pose.position.x << ",";
@@ -57,7 +57,6 @@ void powerLine_handler(inspec_msg::line_control_info msg){
 int main(int argc, char* argv[]){
     ros::init(argc,argv,"data_logger");
     ros::NodeHandle nh;
-
     
     string filePath = ros::package::getPath("data_logger")+ "/Logs/" + fileName();
     logfile.open(filePath);
