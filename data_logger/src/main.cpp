@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     logfile.open(filePath);
 
     ros::Subscriber position_Gazeboo_sub = nh.subscribe("/dataLogger/gazebo_abs_pos_drone", 1, pose_Gazebo_handler);
-    ros::Subscriber position_sub = nh.subscribe("/mavros/local_position/pose",1,pose_handler)
+    ros::Subscriber position_sub = nh.subscribe("/mavros/local_position/pose",1,pose_handler);
     ros::Subscriber powerline_sub = nh.subscribe("/onboard/feedback/powerlinePosition",1,powerLine_handler);
 
     ros::spin();
