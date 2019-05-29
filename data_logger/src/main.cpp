@@ -34,6 +34,7 @@ geometry_msgs::PoseStamped pose;
 
 void pose_handler(geometry_msgs::PoseStamped msg){
     pose = msg;
+    cout<<msg << endl;
 }
 void powerLine_handler(inspec_msg::line_control_info msg){
     logfile << msg.x << "," << msg.y << "," << msg.z << "," << msg.Yaw<< ",";
@@ -61,8 +62,8 @@ int main(int argc, char* argv[]){
     string filePath = ros::package::getPath("data_logger")+ "/Logs/" + fileName();
     logfile.open(filePath);
 
-    ros::Subscriber position_sub = nh.subscribe("/mavros/local_position/pose",1,pose_handler);
-    ros::Subscriber powerline_sub = nh.subscribe("/onboard/setpoint/inspect",1,powerLine_handler);
+    ros::Subscriber position_sub = nh.subscribe("/dataLogger/gazebo_abs_pos_drone", 1, pose_handler);
+    ros::Subscriber powerline_sub = nh.subscribe("/onboard/feedback/powerlinePosition",1,powerLine_handler);
 
     ros::spin();
     logfile.close();

@@ -69,12 +69,11 @@ class inspectPilot():
             self.targetPos = self.curLocalPos
             
             self.lineFound = False
-
-
-            # self.advanceToLine(self.curLocalPos)
             # self.pilotReady= True
             self.advanceToLine()
-            self.alignToLine()
+            if self.lineFound:
+                self.alignToLine()
+                self.ascendToLine()
         else:
             if self.enable:
                 print('inspection Disabled')
@@ -110,7 +109,7 @@ class inspectPilot():
         step.pose.position.y += stepSize               
         # _,_,dist = self.calcDist2D(self.curLocalPos, step)
         # print(dist)
-        numSteps=int(20/stepSize)
+        numSteps=int(25/stepSize)
         self.targetPos = step
         self.pilotReady = True
         print("starting search")
@@ -118,9 +117,12 @@ class inspectPilot():
         for i in range(1, numSteps):
             step.pose.position.y += stepSize
             # _, _, dist = self.calcDist2D(self.curLocalPos, step)
-            d = rospy.Duration(0.2)
+            if i > (numSteps/2):
+                d = rospy.Duration(0.25)
+            else:
+                d = rospy.Duration(0.2)
             rospy.sleep(d)
-            print(i)
+            # print(i)
             self.targetPos = step
             if self.lineFound:
                 break
@@ -154,8 +156,8 @@ class inspectPilot():
             timeoutCheck = True
             while (timeout - rospy.Time.now()) < rospy.Duration(30):
                 pitchError = self.lineTarget.y
-                if abs(pitchError) > 0.5:
-                    pitchGain = 0.15
+                if abs(pitchError) > 0.1: 
+                    pitchGain = 0.15 #induce wobble?
                 else:
                     pitchGain = 0.1
                 
@@ -172,6 +174,65 @@ class inspectPilot():
                     break
             if timeoutCheck:
                 print("timeout")
+            else: 
+                # print("ready To Ascend")
+                pass
+
+    def ascendToLine(self):
+        timeout = rospy.Time.now()
+        toCheck = True
+        ascendRate = 0.1
+        count = 0
+        print('Ascend to line')
+        while (self.lineTarget.z > 0.25):
+            curTime = rospy.Time.now()-timeout
+            ascendRate = 0
+            adjustGain = 0.1
+            delay = 0.25
+            
+            if self.lineTarget.z > 0.3:
+                ascendRate = 0.01
+                adjustGain = 0.015
+                delay = 0.3
+
+            if self.lineTarget.z > 1.0:
+                ascendRate = 0.025
+                adjustGain = 0.05
+                delay = 0.25
+
+            if self.lineTarget.z > 2.5:
+                ascendRate = 0.1
+                adjustGain = 0.17
+                delay = 0.2
+
+            groundDist = 14.5 - self.curLocalPos.pose.position.z
+            self.targetPos.pose.position.y += -(self.lineTarget.y * adjustGain)
+            print("%.2f \t actDist: %.2f, estDist: %.2f, \t ascRate: %.3f, adjGain: %.3f" % (curTime.to_sec(), groundDist, self.lineTarget.z, ascendRate, adjustGain))
+            if abs(self.lineTarget.y) < 0.02:
+
+                self.targetPos.pose.position.z += ascendRate
+                
+                if self.lineTarget < 0.3:
+                    print(count)
+                    count += 1
+            
+            d = rospy.Duration(delay)
+            rospy.sleep(d)
+            
+            if count > 15:
+                toCheck = False
+                break
+            if curTime > rospy.Duration(45):
+                break
+            
+
+            if not self.enable:
+                break
+        if toCheck:
+            print("timeout!")
+        else:
+            print("done")
+
 
     def startLanding(self):
         # global startPos
