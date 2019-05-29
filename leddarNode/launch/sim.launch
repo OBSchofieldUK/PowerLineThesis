@@ -1,0 +1,3 @@
+<launch>
+    <node name="leddar_node" pkg="leddar_node" type="simLeddar.py" output="screen" />
+</launch>

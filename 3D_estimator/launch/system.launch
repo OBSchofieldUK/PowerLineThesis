@@ -4,5 +4,6 @@
     <include file="$(find estimator3d)/launch/prog.launch" />
     <include file="$(find lidar_matcher)/launch/prog.launch" />
     <include file="$(find image_processing)/launch/prog.launch"/>
-    <include file="$(find data_logger)/launch/prog.launch"/> 
+    <include file="$(find data_logger)/launch/sim.launch"/> 
+    <include file="$(find leddar_node)/launch/sim.launch"/>
 </launch>
