@@ -27,8 +27,8 @@
 
 #define lineSeg std::vector< std::vector<cv::Point> >
 
-#define MATCHER_LINE_MAX_ERROR 30
-#define MATCHER_NO_MATCH_COST 30
+#define MATCHER_LINE_MAX_ERROR 60
+#define MATCHER_NO_MATCH_COST 60
 
 #define DEBUG_PROXIMITY_FILTER_ false
 

@@ -420,6 +420,9 @@ namespace settings{
             if(obj.HasMember("FOV horizontal")){
                 dst.segment_H_angle = obj["FOV horizontal"].GetDouble();
             }
+            if(obj.HasMember("Invert segment order")){
+                dst.invert_segment_order = obj["Invert segment order"].GetBool();
+            }
             if(obj.HasMember("Lidar Position")){
                 const rapidjson::Value& obj2 = obj["Lidar Position"];
                 if(obj2.HasMember("X")){
@@ -448,6 +451,7 @@ namespace settings{
             rapidjson::Value nos(Lidar_matcher_Default.number_of_segments);
             rapidjson::Value fovv(Lidar_matcher_Default.segment_V_angle);
             rapidjson::Value fovh(Lidar_matcher_Default.segment_H_angle);
+            rapidjson::Value iso(Lidar_matcher_Default.invert_segment_order);
 
             rapidjson::Value pos(rapidjson::kObjectType);
             rapidjson::Value x(Lidar_matcher_Default.XYZ_lidarTcam[0]);
@@ -468,6 +472,7 @@ namespace settings{
             Object.AddMember("Number of Segments",nos,doc.GetAllocator());
             Object.AddMember("FOV vertical",fovv,doc.GetAllocator());
             Object.AddMember("FOV horizontal",fovh,doc.GetAllocator());
+            Object.AddMember("Invert segment order",iso,doc.GetAllocator());
             Object.AddMember("Lidar Position",pos,doc.GetAllocator());
             
             doc.AddMember("Lidar",Object,doc.GetAllocator());
@@ -476,7 +481,11 @@ namespace settings{
 
         double min_angle = -dst.segment_H_angle*dst.number_of_segments/2 + dst.segment_H_angle/2;
         for(uint i = 0; i < dst.number_of_segments; i ++){
-            dst.seg_angle.push_back(min_angle+dst.segment_H_angle*i);
+            if(dst.invert_segment_order){
+                dst.seg_angle.push_front(min_angle+dst.segment_H_angle*i);
+            }else{
+                dst.seg_angle.push_back(min_angle+dst.segment_H_angle*i);
+            }
         }
 
     }

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <iostream>
 
 typedef unsigned char uchar;
@@ -86,10 +87,11 @@ namespace settings{
         uint number_of_segments;
         double segment_H_angle;
         double segment_V_angle;
-        std::vector<double> seg_angle;
+        std::deque<double> seg_angle;
+        bool invert_segment_order;
 
     };
-    const Lidar Lidar_matcher_Default = {{0,0,0},{0,0,5},8,48.0/8,0.3};
+    const Lidar Lidar_matcher_Default = {{0,0,0},{0,0,5},8,48.0/8,0.3,{},true};
 
 }
 
