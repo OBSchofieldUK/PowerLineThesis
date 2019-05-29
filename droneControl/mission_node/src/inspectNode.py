@@ -184,7 +184,7 @@ class inspectPilot():
         ascendRate = 0.1
         count = 0
         print('Ascend to line')
-        while (self.lineTarget.z > 0.25):
+        while (self.lineTarget.z > 0.15):
             curTime = rospy.Time.now()-timeout
             ascendRate = 0
             adjustGain = 0.1
@@ -208,11 +208,11 @@ class inspectPilot():
             groundDist = 14.5 - self.curLocalPos.pose.position.z
             self.targetPos.pose.position.y += -(self.lineTarget.y * adjustGain)
             print("%.2f \t actDist: %.2f, estDist: %.2f, \t ascRate: %.3f, adjGain: %.3f" % (curTime.to_sec(), groundDist, self.lineTarget.z, ascendRate, adjustGain))
-            if abs(self.lineTarget.y) < 0.02:
+            if abs(self.lineTarget.y) < 0.03:
 
                 self.targetPos.pose.position.z += ascendRate
                 
-                if self.lineTarget < 0.3:
+                if self.lineTarget < 0.2:
                     print(count)
                     count += 1
             
@@ -222,7 +222,7 @@ class inspectPilot():
             if count > 15:
                 toCheck = False
                 break
-            if curTime > rospy.Duration(45):
+            if curTime > rospy.Duration(120):
                 break
             
 

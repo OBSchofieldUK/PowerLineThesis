@@ -1,4 +1,4 @@
 <launch>
    <node name="data_logger" pkg="data_logger" type="data_logger_node" output="screen" />
-   <node name="data_logger" pkg="data_logger" type="getGazebo.py" output="screen"/> 
+   <node name="gazebo_pos" pkg="data_logger" type="getGazebo.py" output="screen"/> 
 </launch>

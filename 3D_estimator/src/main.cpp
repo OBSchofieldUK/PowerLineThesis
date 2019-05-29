@@ -566,7 +566,7 @@ int main(int argc, char* argv[]){
     P_initial   << 10    ,10      ,10     ,0      ,2    ,2    ,10;
     Sigma_u     << 1    ,1      ,1      ,0      ,1    ,1    ,1;
     Sigma_r     << 0.01  ,0.01    ,0.001   ,0.001;
-    Sigma_r_lidar_diag = 0.01;
+    Sigma_r_lidar_diag = 0.0001;
 
     for(int i = 0; i < 7; i++){
         G(i,i) = 1;
