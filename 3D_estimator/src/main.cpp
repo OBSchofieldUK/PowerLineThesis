@@ -513,6 +513,7 @@ void position_handler(inspec_msg::position msg){
         //cout << move << endl;
         //cout << rw::math::RPY<double>(rot) << endl;
         move(0) *= -1;
+        //move(1) *= -1;
         move(2) *= -1;
         rw::math::RPY<double> rot2(rot);
         //rot2(0) *= -1; //Yaw

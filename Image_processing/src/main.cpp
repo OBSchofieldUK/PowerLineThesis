@@ -143,9 +143,8 @@ lineSeg PLineD_full(cv::Mat &src){
 }
 
 // ############### ROS FUNCTIONS #########################
-
 void image_handler(sensor_msgs::Image msg){
-    if(!gotImage && ros::Time::now().toSec()-image_time.toSec() > 0.5){
+    if(!gotImage && msg.header.stamp.toSec()-image_time.toSec() > 0.25){
         if(setting_node.debug) cout << "Image Num: " << msg.header.seq << endl;
         img_num++;
         image_time = msg.header.stamp;
