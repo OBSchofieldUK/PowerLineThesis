@@ -192,8 +192,8 @@ class inspectPilot():
             
             if self.lineTarget.z > 0.3:
                 ascendRate = 0.01
-                adjustGain = 0.015
-                delay = 0.3
+                adjustGain = 0.005
+                delay = 0.2
 
             if self.lineTarget.z > 1.0:
                 ascendRate = 0.025
@@ -222,8 +222,8 @@ class inspectPilot():
             if count > 15:
                 toCheck = False
                 break
-            if curTime > rospy.Duration(120):
-                break
+            #if curTime > rospy.Duration(99999999):
+            #    break
             
 
             if not self.enable:
