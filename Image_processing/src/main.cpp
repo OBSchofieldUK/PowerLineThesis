@@ -31,6 +31,7 @@
 #define MATCHER_NO_MATCH_COST 60
 
 #define DEBUG_PROXIMITY_FILTER_ false
+#define DEBUG_VP false
 
 
 using namespace std;
@@ -282,6 +283,7 @@ int main(int argc, char* argv[]){
     }
     if(DEBUG_PROXIMITY_FILTER_){
         ShowImage("Proximity",BLACK,610,610);
+        ShowImage("Proximity_result",BLACK);
     }
 
     
@@ -316,8 +318,11 @@ int main(int argc, char* argv[]){
             //############## Proximity Filtering ############################
             if(DEBUG_PROXIMITY_FILTER_){
                 cv::Mat out1(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
+                cv::Mat out2(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0));
                 Prox::filter(lines,out1);
                 cv::imshow("Proximity",out1);
+                PLineD::printContours(out2, lines);
+                cv::imshow("Proximity_result",out2);
             }else{
                 Prox::filter(lines);
                 
