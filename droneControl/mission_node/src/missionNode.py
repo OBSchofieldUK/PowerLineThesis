@@ -46,8 +46,7 @@ class missionPilot():
 
         self.wpPub = rospy.Publisher(targetWP, NavSatFix, queue_size=1)
         self.towerRequest = rospy.Publisher(pylonRequest, Bool, queue_size=1)
-        self.pilotStatePub = rospy.Publisher(
-            pilotStatePub, pilot_cb, queue_size=1)
+        self.pilotStatePub = rospy.Publisher(pilotStatePub, pilot_cb, queue_size=1)
 
     def sendState(self, state):
         psMsg = pilot_cb()
@@ -95,7 +94,7 @@ class missionPilot():
         closestDist = None
         pylonidx = -1
         for i in range(0, len(self.pylonList)):
-
+            print(self.dronePos.latitude, self.dronePos.longitude)
             pylonPos = utm.from_latlon(
                 self.pylonList[i].lat, self.pylonList[i].lon)
             # deltaNorthing = utmDronePos[0] - pylonPos[0]
@@ -166,6 +165,7 @@ class missionPilot():
             self.coordSent = True
 
         else:
+            # print(self.dronePos)
             print("Warning: no pylons found! loitering...")
             self.sendState(False)
 

@@ -29,7 +29,7 @@ class pylon_node():
         rospy.Subscriber(mavros.get_topic('global_position', 'global'), NavSatFix, self.cb_onPosUpdate)
         self. pylonPub = rospy.Publisher(pylonDataPub, pylonList, queue_size=1)
         self.osmAPI = "https://api.openstreetmap.org/api/0.6/map"
-        self.boundary = 150 #metres -- curpos +/- (boundary / 2)  
+        self.boundary = 350 #metres -- curpos +/- (boundary / 2)  
         self.dronePos = NavSatFix()
         self.pylonList = []
         rospy.spin()
@@ -41,6 +41,7 @@ class pylon_node():
     def cb_onRequest(self, msg):
         
         if msg.data == True:
+            print(self.dronePos.latitude, self.dronePos.longitude)
             if self.dronePos.latitude == 0.0 or self.dronePos.longitude==0.0:
                 rospy.logwarn("Warning: unable to get drone coordinates!")
             else:
@@ -54,7 +55,8 @@ class pylon_node():
                 boundBR = utm.to_latlon(bottomRightBound[0], bottomRightBound[1], utmPos[2], utmPos[3])
 
                 boundbox = str(boundTL[1])+","+str(boundTL[0])+","+str(boundBR[1])+","+str(boundBR[0])
-                # print boundbox
+                print boundbox
+                
                 self.getPylons(boundbox)
                 self.pylonPub.publish(self.pylonList)
 
@@ -62,7 +64,7 @@ class pylon_node():
     def getPylons(self, boundaryStr):
         payload = {"bbox": boundaryStr}
         r = requests.get(url=self.osmAPI, params=payload)
-        
+
         xmlRoot = ElementTree.fromstring(r.content)
 
         # working find power nodes

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from math import sqrt, radians, hypot
+import datetime
+
+from math import sqrt, radians, hypot, degrees
 import rospy
+import rospkg
 import mavros
 import utm
 import mavros.command as mavCMD
@@ -13,16 +16,19 @@ from std_msgs.msg import (String, Bool, Header)
 from geometry_msgs.msg import Quaternion, Vector3
 from tf.transformations import (euler_from_quaternion, quaternion_from_euler)
 from inspec_msg.msg import (pilot_cb, line_control_info)
-mavros.set_namespace('mavros')
 
+
+
+mavros.set_namespace('mavros')
 onB_StateSub = '/onboard/state'
 targetPub = '/onboard/setpoint/inspect'
 powerlinePosSub = '/onboard/feedback/powerlinePosition'
-
-startPos = mavSP.PoseStamped()
+pilotStatePub = '/onboard/check/pilotState'
 
 class inspectPilot():
     def __init__(self):
+        self.DEBUG = True
+
         rospy.init_node('inspectPilot')
         self.rate = rospy.Rate(20)
         self.enable = False
@@ -33,20 +39,64 @@ class inspectPilot():
         self.curLocalPos = None
         self.lineTarget = None
         self.targetPos = None
-
         rospy.Subscriber(onB_StateSub, String, self.onStateChange)
         rospy.Subscriber(mavros.get_topic('local_position','pose'), mavSP.PoseStamped, self.onPosUpdate)
         rospy.Subscriber(powerlinePosSub, line_control_info, self.onLineUpdate)
 
-
+        self.pilotStatePub = rospy.Publisher(pilotStatePub, pilot_cb, queue_size=1)
         self.attiPub = rospy.Publisher('mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
 
         self.inpectPosSP = rospy.Publisher(targetPub, mavSP.PoseStamped, queue_size=1)
+        if self.DEBUG:
+            self.timeEnabled = None
+            print("InspectNode: Debug Enabled")
+            # self.filename = self.getFilename()
+            # print('(DEBUG) writing to: %s' % self.filename)
+
+
+    def getFilename(self):
+        filename = 'droneCTRL_'+datetime.datetime.now().strftime('%d%m%y_%H:%M')+'.csv'
+        rpkg = rospkg.RosPack()
+        path = rpkg.get_path('root_framework').rsplit('/',1)[0]        
+        concatFile = path+'/logs/'+filename
+        #             write_to_logfile("Writing data to '%s'\r\n" % filename)
+                    
+        fa = open(concatFile,'a+')
+        fa.write("Time, State, posX, posY, posZ, errorX, errorY, errorZ, errorYaw, ascendRate, adjustmentGain, delaytime\r\n")
+        fa.close()
+
+        return concatFile
+
+    def writeLog(self,state, ascendRate, adjGain, delayTime):
+        logFile = self.filename
+        uavPos = self.curLocalPos.pose.position
+        errorPos = self.lineTarget
+        timeElapsed = rospy.Time.now() - self.timeEnabled
+        if errorPos == None:
+            errorPos = line_control_info()
+            errorPos.x = -1.0
+            errorPos.y = -1.0
+            errorPos.z = -1.0
+            errorPos.Yaw = 0.0
+
+        fa = open(logFile, 'a+')
+        # fa.write(
+            # "Time, posX, posY, posZ, errorX, errorY, errorZ, errorYaw, ascendRate, adjustmentGain, delaytime\r\n")
+        output = "%.2f, %i,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.2f,%.3f,%.3f,%.3f\r\n" % (timeElapsed.to_sec(), state, uavPos.x, uavPos.y, uavPos.z, errorPos.x, errorPos.y, errorPos.z, degrees(errorPos.Yaw), ascendRate, adjGain, delayTime)
+        fa.write(output)
+        fa.close()
+
 
     # message handlers 
     def onPosUpdate(self, msg):
         self.curLocalPos = msg
         pass
+
+    def sendState(self, state):
+        psMsg = pilot_cb()
+        psMsg.pilotName = 'inspect'
+        psMsg.complete = state
+        self.pilotStatePub.publish(psMsg)
 
     def onLineUpdate(self, msg):
         if self.lineFound==False:
@@ -69,6 +119,10 @@ class inspectPilot():
             self.targetPos = self.curLocalPos
             
             self.lineFound = False
+            self.filename = self.getFilename()
+            print('(DEBUG) writing to: %s' % self.filename)
+            self.timeEnabled = rospy.Time.now()
+            
             # self.pilotReady= True
             self.advanceToLine()
             if self.lineFound:
@@ -124,6 +178,7 @@ class inspectPilot():
             rospy.sleep(d)
             # print(i)
             self.targetPos = step
+            self.writeLog(0,0.0,0.0,d.to_sec())
             if self.lineFound:
                 break
 
@@ -165,13 +220,16 @@ class inspectPilot():
                 rospy.sleep(d)
                 
                 self.targetPos.pose.position.y -= pitchError * pitchGain
-
+                self.writeLog(1, 0.0, pitchGain, d.to_sec())
                 if abs(pitchError) < 0.075:
                     count +=1
                     # print(count)
                 if count > 25:
                     timeoutCheck = False
                     break
+                if self.enable == False:
+                    break
+
             if timeoutCheck:
                 print("timeout")
             else: 
@@ -184,16 +242,16 @@ class inspectPilot():
         ascendRate = 0.1
         count = 0
         print('Ascend to line')
-        while (self.lineTarget.z > 0.15):
+        while(True):
             curTime = rospy.Time.now()-timeout
             ascendRate = 0
-            adjustGain = 0.1
-            delay = 0.25
+            adjustGain = 0.01
+            delay = 0.1
             
             if self.lineTarget.z > 0.3:
                 ascendRate = 0.01
-                adjustGain = 0.015
-                delay = 0.3
+                adjustGain = 0.005
+                delay = 0.15
 
             if self.lineTarget.z > 1.0:
                 ascendRate = 0.025
@@ -201,18 +259,17 @@ class inspectPilot():
                 delay = 0.25
 
             if self.lineTarget.z > 2.5:
-                ascendRate = 0.1
-                adjustGain = 0.17
+                ascendRate = 0.15
+                adjustGain = 0.1
                 delay = 0.2
 
             groundDist = 14.5 - self.curLocalPos.pose.position.z
             self.targetPos.pose.position.y += -(self.lineTarget.y * adjustGain)
-            print("%.2f \t actDist: %.2f, estDist: %.2f, \t ascRate: %.3f, adjGain: %.3f" % (curTime.to_sec(), groundDist, self.lineTarget.z, ascendRate, adjustGain))
-            if abs(self.lineTarget.y) < 0.03:
+            if abs(self.lineTarget.y) < 0.05:
 
                 self.targetPos.pose.position.z += ascendRate
                 
-                if self.lineTarget < 0.2:
+                if self.lineTarget.z < 0.25:
                     print(count)
                     count += 1
             
@@ -224,15 +281,24 @@ class inspectPilot():
                 break
             if curTime > rospy.Duration(120):
                 break
-            
+            if self.DEBUG:
+                print("%.2f \t actDist: %.2f, estDist: %.2f, \t ascRate: %.3f, adjGain: %.3f, count: %d" % (curTime.to_sec(), groundDist, self.lineTarget.z, ascendRate, adjustGain, count))
+                self.writeLog(2, ascendRate, adjustGain, delay)
 
             if not self.enable:
                 break
         if toCheck:
             print("timeout!")
+            d = rospy.Duration(5.0)
+            rospy.sleep(d)
+            self.targetPos.z -= 2.0
+            
+            self.sendState(False)
+
         else:
             print("done")
-
+            self.sendState(True)
+        
 
     def startLanding(self):
         # global startPos

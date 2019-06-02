@@ -139,7 +139,10 @@ class droneCore():
 
         if keypress == 'i':
             self.setState('inspect')
-
+        if keypress =='o':
+            self.setMode(0, 'OFFBOARD')
+            self.setState('loiter')
+            
     def _pilotStateUpdate(self,msg):
         if msg.complete == False:
             self.setState('loiter')
@@ -149,9 +152,12 @@ class droneCore():
             if pilot == 'mission':
                 self.setState('loiter')
             if pilot == 'takeoff':
-                self.setMode()
+                self.setMode('takeoff')
+                pass
             if pilot == 'landing':
-                self.setMode('idle')
+                self.setState('idle')
+            if pilot == 'inspect':
+                self.setState('loiter')
 
 ## Pilot Commands
     def setState(self, state):

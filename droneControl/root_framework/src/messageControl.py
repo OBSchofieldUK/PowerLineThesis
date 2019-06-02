@@ -110,6 +110,7 @@ class msgControl():
         self.loiterMsg = msg
 
     def pilot_pylonNavMsg(self, msg):
+        print(msg)
         x,y,z = self.gpsToLocal(msg)
         tmpSP = mavSP.PoseStamped()
         tmpSP.pose.position.x = y

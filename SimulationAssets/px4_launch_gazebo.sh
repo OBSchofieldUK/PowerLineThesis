@@ -9,8 +9,11 @@
 # export PX4_HOME_LON=10.414697
 
 # Point near Seden Strand, near powerlines
-export PX4_HOME_LAT=55.43620
-export PX4_HOME_LON=10.46091
+# export PX4_HOME_LAT=55.43620
+# export PX4_HOME_LON=10.46091
+
+export PX4_HOME_LAT=55.43783 
+export PX4_HOME_LON=10.46356
 
 if [[ $1 = "" ]]; then
 # change this to a location of your firmware! must use V1.8.2 of PX4 Firmware

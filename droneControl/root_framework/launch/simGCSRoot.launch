@@ -8,5 +8,5 @@
 	<node pkg="mission_node" type="missionNode.py" name="missionNode" output="screen"></node>
 	<node pkg="root_framework" type="messageControl.py" name="messageControl" output="screen"></node>
 	<node pkg="mission_node" type="inspectNode.py" name="inspectNode" output="screen"></node>
-	
+	<node pkg="mission_node" type="simLineEstimator.py" name="simLineEstimator" output="screen"></node>
 </launch>
