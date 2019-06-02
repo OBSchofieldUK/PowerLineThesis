@@ -49,6 +49,24 @@ cv::Mat calcVecCovar(const std::vector<cv::Point> &inRow){
     coVarMatx.at<double>(1,1) = varYY;
     return coVarMatx;
 }
+/*cv::Mat calcVecCovar(const std::vector<cv::Point> &inRow){
+      double varXY, varXX, varYY =0;
+      cv::Mat coVarMatx = cv::Mat(2,2,CV_64F);
+      for (size_t i = 0; i < inRow.size(); i++) {
+          varXX += (inRow[i].x * inRow[i].x);
+          varXY += (inRow[i].x * inRow[i].y);
+          varYY += (inRow[i].y * inRow[i].y);
+      }
+      varXX /= inRow.size();
+      varXY /= inRow.size();
+      varYY /= inRow.size();
+      coVarMatx.at<double>(0,0) = varXX;
+      coVarMatx.at<double>(0,1) = varXY;
+      coVarMatx.at<double>(1,0) = varXY;
+      coVarMatx.at<double>(1,1) = varYY;
+      return coVarMatx;
+  }*/
+
 double calcDiffAngle(cv::Point V1, cv::Point V2){
     double A= acos(V1.dot(V2)  /  (sqrt(   V1.dot(V1)   )*sqrt(  V2.dot(V2)  )));
     if(A > M_PI/2) A = M_PI-A;
