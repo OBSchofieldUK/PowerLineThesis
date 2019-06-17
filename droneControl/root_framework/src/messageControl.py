@@ -109,11 +109,13 @@ class msgControl():
         self.loiterMsg = msg
 
     def pilot_pylonNavMsg(self, msg):
-        # print(msg)
+        # print(msg)    
         x,y,z = self.gpsToLocal(msg)
+        orient = math.atan2(y,x)
         if x > 0:
-            orient = math.atan2(y,x)
             orientation = Quaternion(*quaternion_from_euler(0,0,orient+math.pi))
+        else:
+            orientation = Quaternion(*quaternion_from_euler(0,0,-orient))
         tmpSP = mavSP.PoseStamped()
         tmpSP.pose.position.x = y
         tmpSP.pose.position.y = x

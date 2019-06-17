@@ -281,10 +281,10 @@ class inspectPilot():
             if self.lineTarget.z > 0.3:
                 ascendRate = 0.01
                 adjustGain = 0.005
-                delay = 0.15
+                delay = 0.1
 
             if self.lineTarget.z > 1.0:
-                ascendRate = 0.025
+                ascendRate = 0.02
                 adjustGain = 0.05
                 delay = 0.25
 
