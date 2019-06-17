@@ -159,7 +159,7 @@ void Line_handler(inspec_msg::line2d_array msg){
 void ShowImage(const string &name, const cv::Mat &img, int x = 50, int y = 50 ){
     cv::namedWindow(name,cv::WINDOW_NORMAL);
     cv::moveWindow(name,x,y);
-    cv::resizeWindow(name, 800,500);
+    // cv::resizeWindow(name, 800,500);
     cv::imshow(name, img);
 }
 int main(int argc, char **argv){
@@ -181,7 +181,7 @@ int main(int argc, char **argv){
     Matched_pub = nh.advertise<inspec_msg::matched_lidar_data_array>("/inspec/daq/lidarDat/Matched",1);
 
     cv::Mat BLACK(camera_setting.pixel_height, camera_setting.pixel_width, CV_8UC3, cv::Scalar(0,0,0));
-    // ShowImage("test",BLACK);
+    ShowImage("test",BLACK);
     cv::waitKey(1);
     ros::spin();
 

@@ -12,6 +12,8 @@ import mavros_msgs.msg
 import mavros_msgs.srv
 
 from std_msgs.msg import (Bool, String, Int8)
+from geometry_msgs.msg import (Quaternion)
+from tf.transformations import quaternion_from_euler
 from sensor_msgs.msg import NavSatFix
 from inspec_msg.msg import line_control_info
 
@@ -44,7 +46,6 @@ class msgControl():
 
         self.setpoint = mavSP.PoseStamped()
         self.curLocalPos = mavSP.PoseStamped()
-        
         self.setpointPub = mavSP.get_pub_position_local(queue_size=1)
         self.wpCompletePub = rospy.Publisher(wpCompleteTopic, Int8, queue_size=1)
         self.homeGPSPub = rospy.Publisher(homeReqPub, Bool, queue_size=1) 
@@ -55,8 +56,6 @@ class msgControl():
         
         rospy.Subscriber(mavros.get_topic('local_position', 'pose'), mavSP.PoseStamped, self._cb_localPosUpdate)
         rospy.Subscriber(mavros.get_topic('home_position','home'), mavros_msgs.msg.HomePosition, self._cb_onHomeUpdate)
-
-
         # pilot subs
         rospy.Subscriber(loiterSub, mavSP.PoseStamped, self.pilot_loiterMsg)
         rospy.Subscriber(missionSub, NavSatFix, self.pilot_pylonNavMsg)
@@ -110,13 +109,17 @@ class msgControl():
         self.loiterMsg = msg
 
     def pilot_pylonNavMsg(self, msg):
-        print(msg)
+        # print(msg)
         x,y,z = self.gpsToLocal(msg)
+        if x > 0:
+            orient = math.atan2(y,x)
+            orientation = Quaternion(*quaternion_from_euler(0,0,orient+math.pi))
         tmpSP = mavSP.PoseStamped()
         tmpSP.pose.position.x = y
         tmpSP.pose.position.y = x
         tmpSP.pose.position.z = z
-        tmpSP.pose.orientation =  self.curLocalPos.pose.orientation
+        
+        tmpSP.pose.orientation =  orientation
 
         self.pylonNavMsg = tmpSP
 
@@ -169,7 +172,7 @@ class msgControl():
             
             acceptedStates = "mission, inspect"
             if (self.sysState in acceptedStates):
-                if self.sysState == 'mission' and self.gotMission:
+                if self.gotMission and self.sysState=='mission':
                     self.wpCompletePub.publish(wpStatus)
 
 

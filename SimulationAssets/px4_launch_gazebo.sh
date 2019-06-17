@@ -12,9 +12,14 @@
 # export PX4_HOME_LAT=55.43620
 # export PX4_HOME_LON=10.46091
 
-export PX4_HOME_LAT=55.43783 
-export PX4_HOME_LON=10.46356
+#export PX4_HOME_LAT=55.43783 
+#export PX4_HOME_LON=10.46356
 
+#export PX4_HOME_LAT=55.43654
+#export PX4_HOME_LON=10.46030
+
+export PX4_HOME_LAT=55.43618
+export PX4_HOME_LON=10.46086
 if [[ $1 = "" ]]; then
 # change this to a location of your firmware! must use V1.8.2 of PX4 Firmware
 FIRMDIR="/home/oschofield/src/Firmware/"
@@ -35,5 +40,5 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/sitl_gazebo
 
 # # launch basic PX4 SITL
-roslaunch px4 msc_posix.launch #&
+roslaunch px4 msc_posix_lidar.launch #&
 

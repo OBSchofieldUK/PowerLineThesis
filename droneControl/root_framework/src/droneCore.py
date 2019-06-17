@@ -150,7 +150,7 @@ class droneCore():
             pilot = msg.pilotName
             print("%s complete!" % pilot)
             if pilot == 'mission':
-                self.setState('loiter')
+                self.setState('inspect')
             if pilot == 'takeoff':
                 self.setMode('takeoff')
                 pass

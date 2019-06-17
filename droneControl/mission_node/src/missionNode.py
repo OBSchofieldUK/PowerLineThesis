@@ -94,7 +94,7 @@ class missionPilot():
         closestDist = None
         pylonidx = -1
         for i in range(0, len(self.pylonList)):
-            print(self.dronePos.latitude, self.dronePos.longitude)
+            # print(self.dronePos.latitude, self.dronePos.longitude)
             pylonPos = utm.from_latlon(
                 self.pylonList[i].lat, self.pylonList[i].lon)
             # deltaNorthing = utmDronePos[0] - pylonPos[0]
@@ -129,7 +129,7 @@ class missionPilot():
 
         nxtUTM = utm.from_latlon(adjPylon.lat, adjPylon.lon)
         northing, easting, _ = self.calcDist(targUTM, nxtUTM)
-        orientation = math.degrees(math.atan(easting/northing))
+        orientation = math.degrees(math.atan2(easting,northing))
         offsetNorth = -self.pylonOffset*math.cos(180-(orientation))
         offsetEast = self.pylonOffset*math.sin(180-(orientation))
 
@@ -147,7 +147,7 @@ class missionPilot():
             utmDronePos = utm.from_latlon(
                 self.dronePos.latitude, self.dronePos.longitude)
             nearidx, nextWP = self.findNearestPylon(utmDronePos)
-            _, wpOffN, wpOffE = self.calcOrientation(nearidx)
+            orientation, wpOffN, wpOffE = self.calcOrientation(nearidx)
 
             utmNxtWP = utm.from_latlon(nextWP.lat, nextWP.lon)
             nxtWPAdjN = utmNxtWP[0] + wpOffN
@@ -158,12 +158,12 @@ class missionPilot():
             wpTarget = NavSatFix()
             wpTarget.latitude = WPADJ[0]
             wpTarget.longitude = WPADJ[1]
-            wpTarget.altitude = 10.0
+            wpTarget.altitude = 25.0
             self.wpPub.publish(wpTarget)
             print("coordSent")
 
             self.coordSent = True
-
+            tmp = NavSatFix()
         else:
             # print(self.dronePos)
             print("Warning: no pylons found! loitering...")
